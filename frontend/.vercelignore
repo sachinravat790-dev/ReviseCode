@@ -1,0 +1,5 @@
+# Vercel deployment exclusions for static frontend
+local-server.cjs
+local-server.js
+tests/
+*.test.*

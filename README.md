@@ -9,7 +9,7 @@ From the root project directory:
 ```bash
 # Using Node.js
 npm start
-# or: node frontend/server.js
+# or: node frontend/local-server.cjs
 
 # Or using Python 3
 python3 -m http.server 3000 --directory frontend
@@ -19,7 +19,7 @@ Or from inside the `frontend/` folder:
 
 ```bash
 cd frontend
-node server.js
+node local-server.cjs
 ```
 
 Then visit: **[http://localhost:3000](http://localhost:3000)** (or **[http://localhost:3000/dashboard.html](http://localhost:3000/dashboard.html)**)

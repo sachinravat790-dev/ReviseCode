@@ -255,8 +255,9 @@ export function initNavigation() {
     }
   }, { passive: true, capture: false });
 
-  // Active link detection
-  const currentPath = window.location.pathname.split('/').pop() || 'dashboard.html';
+  // Active link detection (handles both standard .html and clean URLs)
+  const rawPath = window.location.pathname.split('/').pop() || 'dashboard.html';
+  const currentPath = rawPath.endsWith('.html') ? rawPath : (rawPath ? `${rawPath}.html` : 'dashboard.html');
   let targetNavHref = currentPath;
   if (currentPath === '' || currentPath === 'index.html') {
     targetNavHref = 'dashboard.html';

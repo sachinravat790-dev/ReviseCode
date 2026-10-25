@@ -14,7 +14,7 @@ You can run ReviseCode locally in **under 5 seconds** with zero external depende
 
 ### Option 1: Node.js (Recommended)
 ```bash
-node server.js
+node local-server.cjs
 # or
 npm start
 ```
@@ -48,7 +48,7 @@ revisecode/
 ├── notifications.html       # Alerts, unread filters, and delivery preferences
 ├── settings.html            # Profile, theme picker, study goals, JSON export, demo reset
 ├── profile.html             # User profile overview with focus areas and statistics
-├── server.js                # Zero-dependency local web server
+├── local-server.cjs         # Zero-dependency local development web server
 ├── package.json             # NPM metadata and launch scripts
 │
 ├── css/

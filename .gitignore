@@ -7,3 +7,4 @@ node_modules/
 dist/
 coverage/
 *.log
+backend_backup_baseline/

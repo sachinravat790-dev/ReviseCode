@@ -32,8 +32,8 @@ export function getApiBaseUrl() {
     }
 
     // Production (Vercel deployment or custom domain):
-    // Use relative '/api', which Vercel proxies to the deployed Render backend via vercel.json rewrites.
-    return '/api';
+    // Points directly to the production Render backend API
+    return 'https://revisecode.onrender.com/api';
   }
 
   // 4. Default fallback for headless test runners / SSR

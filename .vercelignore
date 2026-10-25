@@ -1,0 +1,10 @@
+# Vercel deployment exclusions
+local-server.cjs
+local-server.js
+frontend/local-server.cjs
+frontend/local-server.js
+backend/
+backend_backup_baseline/
+tests/
+frontend/tests/
+*.test.*
