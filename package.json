@@ -1,0 +1,11 @@
+{
+  "name": "revisecode-workspace",
+  "version": "1.0.0",
+  "description": "ReviseCode Workspace",
+  "scripts": {
+    "start": "node frontend/server.js 3000",
+    "start:backend": "node backend/src/server.js",
+    "test:backend": "npm test --prefix backend",
+    "serve": "python3 -m http.server 3000 --directory frontend"
+  }
+}

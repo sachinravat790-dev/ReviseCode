@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Question — ReviseCode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/questions.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="brand-logo">
+          <div class="brand-icon-wrapper">
+            <i data-lucide="repeat"></i>
+          </div>
+          <span class="brand-text">Revise<span>Code</span></span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Navigation</div>
+        <a href="dashboard.html" class="nav-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="subjects.html" class="nav-link">
+          <i data-lucide="folder-kanban"></i>
+          <span>My Subjects</span>
+        </a>
+        <a href="questions.html" class="nav-link active">
+          <i data-lucide="code-2"></i>
+          <span>All Questions</span>
+        </a>
+        <a href="revision-center.html" class="nav-link">
+          <i data-lucide="refresh-cw"></i>
+          <span>Revision Center</span>
+          <span class="nav-badge" id="sidebarDueBadge" style="display: none;">Due</span>
+        </a>
+        <a href="calendar.html" class="nav-link">
+          <i data-lucide="calendar"></i>
+          <span>Revision Calendar</span>
+        </a>
+
+        <div class="nav-section-title" style="margin-top: 16px;">Intelligence & Tools</div>
+        <a href="ai-assistant.html" class="nav-link">
+          <i data-lucide="sparkles"></i>
+          <span>AI Assistant</span>
+        </a>
+        <a href="analytics.html" class="nav-link">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="notifications.html" class="nav-link">
+          <i data-lucide="bell"></i>
+          <span>Notifications</span>
+        </a>
+        <a href="settings.html" class="nav-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-snippet">
+          <div class="user-avatar">SK</div>
+          <div class="user-info">
+            <div class="user-name">Sachin Kumar</div>
+            <div class="user-role">Software Engineer</div>
+          </div>
+          <button class="icon-btn" id="logoutBtn" aria-label="Sign out">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="Toggle drawer">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="breadcrumbs">
+            <a href="dashboard.html">ReviseCode</a>
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+            <a href="questions.html">Questions</a>
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+            <span style="color: var(--text-primary); font-weight: 500;" id="addPageTitle">Add Question</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="search-trigger" aria-label="Search questions">
+            <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+            <span>Search questions, topics...</span>
+            <span class="search-kbd">⌘K</span>
+          </button>
+
+          <div class="topbar-actions">
+            <button class="icon-btn theme-toggle-btn" aria-label="Toggle theme">
+              <i data-lucide="sun"></i>
+            </button>
+            <a href="notifications.html" class="icon-btn" aria-label="Notifications">
+              <i data-lucide="bell"></i>
+              <span class="icon-badge" id="topbarNotifBadge"></span>
+            </a>
+
+            <div class="dropdown" id="userProfileDropdown">
+              <button class="user-avatar" id="userProfileMenuBtn" style="cursor: pointer; width: 34px; height: 34px; font-size: 13px;" aria-label="User menu">
+                SK
+              </button>
+              <div class="dropdown-menu">
+                <a href="profile.html" class="dropdown-item">
+                  <i data-lucide="user"></i> My Profile
+                </a>
+                <a href="settings.html" class="dropdown-item">
+                  <i data-lucide="sliders"></i> Preferences
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item text-danger" id="dropdownLogoutBtn">
+                  <i data-lucide="log-out"></i> Sign Out
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <div style="max-width: 900px; margin: 0 auto;">
+          <div style="margin-bottom: var(--space-xl);">
+            <h1 class="page-title" style="font-size: 1.75rem;">Save Question & Schedule Revisions</h1>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+              Document your solution and lock in the 5 mandatory spaced repetition milestones.
+            </p>
+          </div>
+
+          <!-- Duplicate Warning Banner -->
+          <div id="duplicateWarningBox" style="display: none; padding: 14px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--warning); margin-bottom: 24px; font-size: 13px; align-items: center; gap: 10px;">
+            <!-- Populated if duplicate detected -->
+          </div>
+
+          <form id="addQuestionForm" novalidate>
+            <!-- Card 1: Core Problem Identification -->
+            <div class="card" style="margin-bottom: var(--space-xl);">
+              <h3 class="card-title" style="margin-bottom: 16px;">1. Problem Identification</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="qPlatform" class="form-label form-label-required">Platform</label>
+                  <select id="qPlatform" class="form-control" required>
+                    <option value="LeetCode">LeetCode</option>
+                    <option value="HackerRank">HackerRank</option>
+                    <option value="Codeforces">Codeforces</option>
+                    <option value="GeeksforGeeks">GeeksforGeeks</option>
+                    <option value="CodeChef">CodeChef</option>
+                    <option value="Other">Other Platform</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="qNumber" class="form-label">Problem # or Identifier</label>
+                  <input type="text" id="qNumber" class="form-control" placeholder="e.g. 50">
+                </div>
+
+                <div class="form-group">
+                  <label for="qDifficulty" class="form-label form-label-required">Difficulty</label>
+                  <select id="qDifficulty" class="form-control" required>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="qTitle" class="form-label form-label-required">Question Title</label>
+                <input type="text" id="qTitle" class="form-control" placeholder="e.g. Pow(x, n)" required>
+              </div>
+
+              <div class="form-group">
+                <label for="qUrl" class="form-label">Original Problem URL</label>
+                <input type="url" id="qUrl" class="form-control" placeholder="https://leetcode.com/problems/...">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="qSubject" class="form-label form-label-required">Subject</label>
+                  <select id="qSubject" class="form-control" required>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="qTopic" class="form-label">Topic / Category</label>
+                  <input type="text" id="qTopic" class="form-control" placeholder="e.g. Binary Search, Dynamic Programming">
+                </div>
+
+                <div class="form-group">
+                  <label for="qDateSolved" class="form-label form-label-required">Date Solved</label>
+                  <input type="date" id="qDateSolved" class="form-control" required>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="qTags" class="form-label">Tags (comma-separated)</label>
+                <input type="text" id="qTags" class="form-control" placeholder="e.g. Recursion, Divide and Conquer, Math">
+              </div>
+            </div>
+
+            <!-- Card 2: Solution & Complexity -->
+            <div class="card" style="margin-bottom: var(--space-xl);">
+              <h3 class="card-title" style="margin-bottom: 16px;">2. Solution & Technical Approach</h3>
+
+              <div class="form-group">
+                <label for="qSummary" class="form-label">Problem Statement Summary</label>
+                <textarea id="qSummary" class="form-control" rows="3" placeholder="Brief summary of input/output and key constraints..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="qApproach" class="form-label">Solution Approach & Intuition</label>
+                <textarea id="qApproach" class="form-control" rows="3" placeholder="Explain the core intuition, state transitions, or algorithm steps..."></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="qTimeComplexity" class="form-label">Time Complexity</label>
+                  <input type="text" id="qTimeComplexity" class="form-control" placeholder="e.g. O(log n) or O(n)">
+                </div>
+
+                <div class="form-group">
+                  <label for="qSpaceComplexity" class="form-label">Space Complexity</label>
+                  <input type="text" id="qSpaceComplexity" class="form-control" placeholder="e.g. O(1) or O(n)">
+                </div>
+
+                <div class="form-group">
+                  <label for="qCodeLanguage" class="form-label">Language</label>
+                  <select id="qCodeLanguage" class="form-control">
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python</option>
+                    <option value="cpp">C++</option>
+                    <option value="java">Java</option>
+                    <option value="sql">SQL</option>
+                    <option value="typescript">TypeScript</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="qCodeSolution" class="form-label">Solution Code</label>
+                <textarea id="qCodeSolution" class="form-control" rows="8" style="font-family: var(--font-family-mono); font-size: 13px;" placeholder="// Paste your working implementation here..."></textarea>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="qNotes" class="form-label">Personal Notes / Traps & Edge Cases</label>
+                <textarea id="qNotes" class="form-control" rows="2" placeholder="Key edge cases to watch out for, tricky boundary conditions..."></textarea>
+              </div>
+            </div>
+
+            <!-- Card 3: Attachments -->
+            <div class="card" style="margin-bottom: var(--space-xl);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                <div>
+                  <h3 class="card-title">3. Attachments & Handwritten Notes</h3>
+                  <p class="card-subtitle">Upload whiteboard photos, iPad sketches, or screenshots</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="mockCameraBtn">
+                  <i data-lucide="camera"></i> Camera Capture
+                </button>
+              </div>
+
+              <div class="dropzone-box" id="attachmentDropzone">
+                <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Click to browse or drag & drop images/files</div>
+                <div style="font-size: 12px; color: var(--text-muted);">Supports PNG, JPG, WEBP, or code text files up to 10MB</div>
+                <input type="file" id="attachmentFileInput" style="display: none;" multiple accept="image/*,.pdf,.txt,.cpp,.py,.js">
+              </div>
+
+              <div class="uploaded-preview-list" id="attachmentPreviewList">
+                <!-- Preview items inserted here -->
+              </div>
+            </div>
+
+            <!-- Card 4: Revision Schedule -->
+            <div class="card" style="margin-bottom: var(--space-xl);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div>
+                  <h3 class="card-title">4. Spaced Revision Schedule</h3>
+                  <p class="card-subtitle">Mandatory spaced milestones automatically generated from your solved date</p>
+                </div>
+                <span class="badge badge-due">5 Milestones Locked</span>
+              </div>
+
+              <div class="milestones-track" id="milestoneDatesPreview" style="margin: 16px 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
+                <!-- Dynamically previewed calendar dates -->
+              </div>
+
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">
+                <i data-lucide="info" style="width: 14px; display: inline; vertical-align: middle;"></i>
+                Mandatory revision milestones are preserved on Days 3, 7, 12, 20, and 30 to optimize neural retention.
+              </p>
+            </div>
+
+            <!-- Submit Button Bar -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 40px;">
+              <a href="questions.html" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary btn-lg" id="addSubmitBtn">
+                <i data-lucide="check"></i> Save Question & Schedule
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/navigation.js"></script>
+  <script type="module" src="js/add-question.js"></script>
+</body>
+</html>

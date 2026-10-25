@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Question Details — ReviseCode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/questions.css">
+  <link rel="stylesheet" href="css/revision.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="brand-logo">
+          <div class="brand-icon-wrapper">
+            <i data-lucide="repeat"></i>
+          </div>
+          <span class="brand-text">Revise<span>Code</span></span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Navigation</div>
+        <a href="dashboard.html" class="nav-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="subjects.html" class="nav-link">
+          <i data-lucide="folder-kanban"></i>
+          <span>My Subjects</span>
+        </a>
+        <a href="questions.html" class="nav-link active">
+          <i data-lucide="code-2"></i>
+          <span>All Questions</span>
+        </a>
+        <a href="revision-center.html" class="nav-link">
+          <i data-lucide="refresh-cw"></i>
+          <span>Revision Center</span>
+          <span class="nav-badge" id="sidebarDueBadge" style="display: none;">Due</span>
+        </a>
+        <a href="calendar.html" class="nav-link">
+          <i data-lucide="calendar"></i>
+          <span>Revision Calendar</span>
+        </a>
+
+        <div class="nav-section-title" style="margin-top: 16px;">Intelligence & Tools</div>
+        <a href="ai-assistant.html" class="nav-link">
+          <i data-lucide="sparkles"></i>
+          <span>AI Assistant</span>
+        </a>
+        <a href="analytics.html" class="nav-link">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="notifications.html" class="nav-link">
+          <i data-lucide="bell"></i>
+          <span>Notifications</span>
+        </a>
+        <a href="settings.html" class="nav-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-snippet">
+          <div class="user-avatar">SK</div>
+          <div class="user-info">
+            <div class="user-name">Sachin Kumar</div>
+            <div class="user-role">Software Engineer</div>
+          </div>
+          <button class="icon-btn" id="logoutBtn" aria-label="Sign out">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="Toggle drawer">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="breadcrumbs">
+            <a href="dashboard.html">ReviseCode</a>
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+            <a href="questions.html">Questions</a>
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+            <span style="color: var(--text-primary); font-weight: 500;">Problem Details</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="search-trigger" aria-label="Search questions">
+            <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+            <span>Search questions, topics...</span>
+            <span class="search-kbd">⌘K</span>
+          </button>
+
+          <div class="topbar-actions">
+            <button class="icon-btn theme-toggle-btn" aria-label="Toggle theme">
+              <i data-lucide="sun"></i>
+            </button>
+            <a href="notifications.html" class="icon-btn" aria-label="Notifications">
+              <i data-lucide="bell"></i>
+              <span class="icon-badge" id="topbarNotifBadge"></span>
+            </a>
+
+            <div class="dropdown" id="userProfileDropdown">
+              <button class="user-avatar" id="userProfileMenuBtn" style="cursor: pointer; width: 34px; height: 34px; font-size: 13px;" aria-label="User menu">
+                SK
+              </button>
+              <div class="dropdown-menu">
+                <a href="profile.html" class="dropdown-item">
+                  <i data-lucide="user"></i> My Profile
+                </a>
+                <a href="settings.html" class="dropdown-item">
+                  <i data-lucide="sliders"></i> Preferences
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item text-danger" id="dropdownLogoutBtn">
+                  <i data-lucide="log-out"></i> Sign Out
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <!-- Header Card -->
+        <div class="detail-header-card">
+          <div class="detail-title-row">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span class="platform-pill platform-leetcode" id="detailPlatform">LeetCode 50</span>
+                <span class="badge badge-medium" id="detailDifficultyBadge">Medium</span>
+                <span class="badge" style="background: var(--bg-surface-elevated);" id="detailSubject">DSA</span>
+                <span class="badge" style="background: var(--bg-surface-elevated);" id="detailTopic">Binary Search</span>
+              </div>
+              <h1 class="page-title" id="detailTitle">Pow(x, n)</h1>
+              <div id="detailTagsContainer" style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;"></div>
+            </div>
+
+            <div class="detail-actions-group">
+              <a href="#" class="btn btn-outline btn-sm" id="detailExternalLink" target="_blank" rel="noopener noreferrer">
+                <i data-lucide="external-link"></i> Problem URL
+              </a>
+              <button class="btn btn-outline btn-sm question-bookmark-btn" id="detailBookmarkBtn">
+                <i data-lucide="bookmark"></i> Bookmark
+              </button>
+              <button class="btn btn-secondary btn-sm" id="detailEditBtn">
+                <i data-lucide="edit-2"></i> Edit
+              </button>
+              <button class="btn btn-danger-outline btn-sm" id="detailDeleteBtn">
+                <i data-lucide="trash-2"></i> Delete
+              </button>
+              <a href="revision-center.html" class="btn btn-primary btn-sm" id="detailStartRevisionBtn">
+                <i data-lucide="play"></i> Start Revision
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Complexity Badges -->
+        <div class="complexity-cards-row">
+          <div class="complexity-card">
+            <div class="complexity-icon">T</div>
+            <div class="complexity-details">
+              <h5>Time Complexity</h5>
+              <p id="detailTimeComplexity">O(log n)</p>
+            </div>
+          </div>
+
+          <div class="complexity-card">
+            <div class="complexity-icon">S</div>
+            <div class="complexity-details">
+              <h5>Space Complexity</h5>
+              <p id="detailSpaceComplexity">O(1)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Column Content Grid -->
+        <div class="dashboard-grid">
+          <!-- Left: Problem statement, approach, code solution, attachments -->
+          <div>
+            <!-- Problem Statement -->
+            <div class="card" style="margin-bottom: var(--space-xl);">
+              <h3 class="card-title" style="margin-bottom: 12px;">Problem Statement</h3>
+              <p style="color: var(--text-primary); font-size: 14px; line-height: 1.7;" id="detailSummary">
+                Loading summary...
+              </p>
+            </div>
+
+            <!-- Approach & Intuition -->
+            <div class="card" style="margin-bottom: var(--space-xl);">
+              <h3 class="card-title" style="margin-bottom: 12px;">Solution Approach & Intuition</h3>
+              <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.7;" id="detailApproach">
+                Loading approach...
+              </p>
+            </div>
+
+            <!-- Code Solution -->
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-lang-label" id="detailCodeLang">JavaScript</span>
+                <button class="btn btn-ghost btn-sm" id="copyCodeBtn" style="color: var(--text-muted); font-size: 12px;">
+                  <i data-lucide="copy" style="width: 14px; height: 14px;"></i> Copy Code
+                </button>
+              </div>
+              <pre class="code-pre"><code id="detailCodePre">Loading code...</code></pre>
+            </div>
+
+            <!-- Personal Notes & Edge Cases -->
+            <div class="card" style="margin-bottom: var(--space-xl);">
+              <h3 class="card-title" style="margin-bottom: 12px;">Personal Notes & Traps</h3>
+              <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.7;" id="detailNotes">
+                No personal notes.
+              </p>
+            </div>
+
+            <!-- Handwritten Notes & Attachments -->
+            <div class="card">
+              <h3 class="card-title" style="margin-bottom: 12px;">Handwritten Notes & Diagrams</h3>
+              <div class="attachments-grid" id="detailAttachmentsGrid">
+                <!-- Dynamically loaded -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Spaced Revision Timeline & Sessions History -->
+          <div>
+            <!-- Revision Milestones Timeline -->
+            <div class="card" style="margin-bottom: var(--space-xl);">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Revision Milestones</h3>
+                  <p class="card-subtitle">Mandatory spaced repetition schedule</p>
+                </div>
+              </div>
+              <div class="timeline-list" id="detailMilestonesTimeline">
+                <!-- Dynamically populated by js/question-detail.js -->
+              </div>
+            </div>
+
+            <!-- Past Revision Sessions -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Recall History</h3>
+                  <p class="card-subtitle">Previous active recall attempts</p>
+                </div>
+              </div>
+              <div id="detailSessionsHistory">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Image Lightbox Modal for Attachments -->
+  <div class="modal-backdrop" id="attachmentModal">
+    <div class="modal-dialog" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Attachment Preview</h3>
+        <button class="modal-close" id="attachmentModalClose"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 16px;">
+        <img id="attachmentModalImg" src="" alt="Attachment Preview" style="max-height: 70vh; margin: 0 auto; border-radius: 8px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/navigation.js"></script>
+  <script type="module" src="js/question-detail.js"></script>
+  <script>
+    // Lightbox modal handler
+    document.addEventListener('click', (e) => {
+      const thumb = e.target.closest('.attachment-thumbnail');
+      if (thumb) {
+        const src = thumb.getAttribute('data-src');
+        const modal = document.getElementById('attachmentModal');
+        const img = document.getElementById('attachmentModalImg');
+        if (modal && img && src) {
+          img.src = src;
+          modal.classList.add('is-open');
+        }
+      }
+    });
+    document.getElementById('attachmentModalClose').onclick = () => {
+      document.getElementById('attachmentModal').classList.remove('is-open');
+    };
+  </script>
+</body>
+</html>

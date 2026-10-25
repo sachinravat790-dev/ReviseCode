@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReviseCode — Stop Forgetting What You Learn</title>
+  <meta name="description" content="ReviseCode helps developers and students retain coding concepts, save solutions and handwritten notes, schedule spaced revisions, and remember forever.">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/landing.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body class="landing-body">
+
+  <!-- Landing Navigation -->
+  <header class="landing-nav">
+    <div class="landing-nav-container">
+      <a href="index.html" class="brand-logo">
+        <div class="brand-icon-wrapper">
+          <i data-lucide="repeat"></i>
+        </div>
+        <span class="brand-text">Revise<span>Code</span></span>
+      </a>
+
+      <nav class="landing-nav-links">
+        <a href="#how-it-works" class="landing-nav-link">How It Works</a>
+        <a href="#features" class="landing-nav-link">Features</a>
+        <a href="#schedule-demo" class="landing-nav-link">Spaced Schedule</a>
+        <a href="#ai-demo" class="landing-nav-link">AI Assistant</a>
+        <a href="#faq" class="landing-nav-link">FAQ</a>
+      </nav>
+
+      <div class="landing-nav-actions">
+        <button class="icon-btn theme-toggle-btn" aria-label="Toggle theme">
+          <i data-lucide="sun"></i>
+        </button>
+        <a href="login.html" class="btn btn-ghost">Sign In</a>
+        <a href="dashboard.html" class="btn btn-primary">Open App</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-glow"></div>
+    <div class="hero-container">
+      <div class="hero-pill">
+        <i data-lucide="sparkles"></i>
+        <span>Scientific Spaced Repetition for Software Engineers</span>
+      </div>
+
+      <h1 class="hero-title">
+        Stop Forgetting <br>
+        <span class="gradient-text">What You Learn.</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Save your solutions, build smarter revision habits, and remember more with your personal AI-powered learning companion.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="register.html" class="btn btn-primary btn-lg">
+          Start Revising for Free <i data-lucide="arrow-right"></i>
+        </a>
+        <a href="#features" class="btn btn-secondary btn-lg">
+          Explore Features
+        </a>
+      </div>
+
+      <p class="hero-tagline">"Learn it. Save it. Revise it. Remember it."</p>
+    </div>
+
+    <!-- Dashboard Preview Mockup -->
+    <div class="hero-preview-container">
+      <div class="hero-preview-frame">
+        <div class="preview-topbar">
+          <div class="browser-dots">
+            <span class="browser-dot red"></span>
+            <span class="browser-dot yellow"></span>
+            <span class="browser-dot green"></span>
+          </div>
+          <div class="browser-url">app.revisecode.io/dashboard</div>
+        </div>
+
+        <div class="preview-content">
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div>
+                <h4 style="font-size: 16px; font-weight: 700;">Today's Revision Queue</h4>
+                <p style="font-size: 12px; color: var(--text-muted);">2 revisions due based on optimal retention curve</p>
+              </div>
+              <span class="badge badge-due">2 Due Today</span>
+            </div>
+
+            <!-- Mock Queue Item 1 -->
+            <div class="queue-item" style="margin-bottom: 10px;">
+              <div class="queue-item-left">
+                <span class="platform-pill platform-leetcode">LeetCode 50</span>
+                <div class="queue-item-info">
+                  <div class="queue-item-title">Pow(x, n)</div>
+                  <div class="queue-item-meta">
+                    <span>Milestone: Day 3</span>
+                    <span>•</span>
+                    <span>DSA (Binary Search)</span>
+                  </div>
+                </div>
+              </div>
+              <a href="dashboard.html" class="btn btn-primary btn-sm">Revise</a>
+            </div>
+
+            <!-- Mock Queue Item 2 -->
+            <div class="queue-item">
+              <div class="queue-item-left">
+                <span class="platform-pill platform-leetcode">LeetCode 53</span>
+                <div class="queue-item-info">
+                  <div class="queue-item-title">Maximum Subarray (Kadane)</div>
+                  <div class="queue-item-meta">
+                    <span>Milestone: Day 7</span>
+                    <span>•</span>
+                    <span>DSA (DP)</span>
+                  </div>
+                </div>
+              </div>
+              <a href="dashboard.html" class="btn btn-primary btn-sm">Revise</a>
+            </div>
+          </div>
+
+          <!-- Preview Side Card -->
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="streak-card" style="margin-bottom: 0;">
+              <div class="streak-flame-icon">
+                <i data-lucide="flame"></i>
+              </div>
+              <div class="streak-details">
+                <h4>5 Days</h4>
+                <p>Consistent Recall Streak</p>
+              </div>
+            </div>
+
+            <div class="card" style="padding: 16px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+                <span style="font-weight: 600;">Completion Rate</span>
+                <span style="color: var(--success); font-weight: 700;">88%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" style="width: 88%; background: var(--success);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1: The Problem (Ebbinghaus Forgetting Curve) -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-tag">The Reality of Coding Interviews</div>
+      <h2 class="section-title">The Forgetting Curve is Stealing Your Hard Work</h2>
+      <p class="section-subtitle">
+        Research shows that without active spaced revision, developers forget up to 75% of newly learned algorithms within 48 hours.
+      </p>
+    </div>
+
+    <div class="problem-grid">
+      <div class="problem-card bad">
+        <div class="problem-card-header">
+          <i data-lucide="x-circle"></i>
+          <span>Without ReviseCode</span>
+        </div>
+        <div class="problem-list">
+          <div class="problem-list-item">
+            <i data-lucide="alert-circle" style="color: #f87171; width: 18px; flex-shrink: 0;"></i>
+            <span>You solve a tricky DP problem today, then forget the state transition two weeks later.</span>
+          </div>
+          <div class="problem-list-item">
+            <i data-lucide="alert-circle" style="color: #f87171; width: 18px; flex-shrink: 0;"></i>
+            <span>Solutions and handwritten iPad notes stay scattered across bookmarks, GitHub gists, and notebooks.</span>
+          </div>
+          <div class="problem-list-item">
+            <i data-lucide="alert-circle" style="color: #f87171; width: 18px; flex-shrink: 0;"></i>
+            <span>Last-minute panic before interviews trying to re-solve 150 questions in three sleepless days.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="problem-card good">
+        <div class="problem-card-header">
+          <i data-lucide="check-circle-2"></i>
+          <span>With ReviseCode</span>
+        </div>
+        <div class="problem-list">
+          <div class="problem-list-item">
+            <i data-lucide="check" style="color: #34d399; width: 18px; flex-shrink: 0;"></i>
+            <span>Mandatory spaced repetition milestones automatically scheduled on Days 3, 7, 12, 20, and 30.</span>
+          </div>
+          <div class="problem-list-item">
+            <i data-lucide="check" style="color: #34d399; width: 18px; flex-shrink: 0;"></i>
+            <span>Active recall testing: attempt to articulate the intuition before peeking at your saved code.</span>
+          </div>
+          <div class="problem-list-item">
+            <i data-lucide="check" style="color: #34d399; width: 18px; flex-shrink: 0;"></i>
+            <span>Natural language AI assistant that logs problems and keeps your retention schedule pristine.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: How It Works -->
+  <section class="section" id="how-it-works">
+    <div class="section-header">
+      <div class="section-tag">Simple & Effective</div>
+      <h2 class="section-title">How ReviseCode Works in 4 Steps</h2>
+      <p class="section-subtitle">
+        A structured learning loop engineered to turn short-term insights into permanent technical mastery.
+      </p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">01</div>
+        <h4 class="step-title">Solve & Save</h4>
+        <p class="step-desc">
+          Finished a problem on LeetCode, HackerRank, or GFG? Save your solution, complexity analysis, and handwritten whiteboard notes in one click.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">02</div>
+        <h4 class="step-title">Automated Scheduling</h4>
+        <p class="step-desc">
+          ReviseCode immediately schedules precision revision milestones for Days 3, 7, 12, 20, and 30 to intercept forgetting thresholds.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">03</div>
+        <h4 class="step-title">Active Recall Review</h4>
+        <p class="step-desc">
+          When due, open the question in the Revision Center. Test your memory on the problem statement first before revealing the hidden code.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">04</div>
+        <h4 class="step-title">Track & Master</h4>
+        <p class="step-desc">
+          Rate recall as Easy, Difficult, or Forgot. Our analytics engine continuously highlights weak spots and tracks your learning streak.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Smart Spaced Schedule Demonstration -->
+  <section class="section" id="schedule-demo">
+    <div class="section-header">
+      <div class="section-tag">Spaced Repetition Engine</div>
+      <h2 class="section-title">The Mandatory Milestone System</h2>
+      <p class="section-subtitle">
+        Every question automatically locks in the scientific 5-milestone curve. Overdue milestones stay tracked without altering your future targets.
+      </p>
+    </div>
+
+    <div class="schedule-visualizer">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h4 style="font-size: 18px; font-weight: 700;">Example Question: LeetCode 50 — Pow(x, n)</h4>
+          <span style="font-size: 13px; color: var(--text-muted);">Solved on: October 19, 2026</span>
+        </div>
+        <span class="badge badge-due">Active Schedule</span>
+      </div>
+
+      <div class="milestones-track">
+        <div class="milestone-node completed">
+          <div class="node-day">Day 3</div>
+          <div class="node-label">Oct 22 (Today)</div>
+        </div>
+        <div class="milestone-node">
+          <div class="node-day">Day 7</div>
+          <div class="node-label">Oct 26</div>
+        </div>
+        <div class="milestone-node">
+          <div class="node-day">Day 12</div>
+          <div class="node-label">Oct 31</div>
+        </div>
+        <div class="milestone-node">
+          <div class="node-day">Day 20</div>
+          <div class="node-label">Nov 8</div>
+        </div>
+        <div class="milestone-node">
+          <div class="node-day">Day 30</div>
+          <div class="node-label">Nov 18</div>
+        </div>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-secondary); text-align: center;">
+        * Completing a milestone records your recall quality and updates your retention score without overwriting your history.
+      </p>
+    </div>
+  </section>
+
+  <!-- Section 4: Features Grid -->
+  <section class="section" id="features">
+    <div class="section-header">
+      <div class="section-tag">Core Capabilities</div>
+      <h2 class="section-title">Built for Serious Learners</h2>
+      <p class="section-subtitle">
+        Everything you need to organize your coding journey across DSA, SQL, Web Development, and System Design.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <i data-lucide="brain"></i>
+        </div>
+        <h4 class="feature-title">Active Recall Flashcards</h4>
+        <p class="feature-desc">
+          Hide code solutions by default. Challenge your memory first, then reveal the answer and rate retention difficulty.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <i data-lucide="bot"></i>
+        </div>
+        <h4 class="feature-title">AI Assistant Companion</h4>
+        <p class="feature-desc">
+          Tell the assistant "I solved LeetCode 50. Add it to my tracker" and let it automatically parse, schedule, and verify.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <i data-lucide="calendar"></i>
+        </div>
+        <h4 class="feature-title">Interactive Revision Calendar</h4>
+        <p class="feature-desc">
+          Monthly visual calendar with color-coded milestone dots, daily agendas, and direct review triggers.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <i data-lucide="camera"></i>
+        </div>
+        <h4 class="feature-title">Handwritten Notes & Photos</h4>
+        <p class="feature-desc">
+          Upload whiteboard diagrams, iPad sketches, and handwritten scratchpads right alongside your code solutions.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <i data-lucide="bar-chart-3"></i>
+        </div>
+        <h4 class="feature-title">Retention Analytics</h4>
+        <p class="feature-desc">
+          Identify frequently forgotten topics, monitor your learning streak, and review subject-level progress charts.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <i data-lucide="shield-check"></i>
+        </div>
+        <h4 class="feature-title">Safe Data Architecture</h4>
+        <p class="feature-desc">
+          Export your entire revision database to JSON anytime. Clean separation ready for Firebase cloud synchronization.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: AI Assistant Demonstration -->
+  <section class="section" id="ai-demo">
+    <div class="section-header">
+      <div class="section-tag">Conversational Workflow</div>
+      <h2 class="section-title">Interact Naturally With Your Learning Tracker</h2>
+      <p class="section-subtitle">
+        Say goodbye to tedious manual forms. Talk to the assistant to save questions, fetch overdue lists, or explain concepts.
+      </p>
+    </div>
+
+    <div class="card" style="max-width: 800px; margin: 0 auto; padding: var(--space-xl);">
+      <div class="chat-msg user" style="margin-bottom: 16px;">
+        <div class="msg-bubble">
+          <p>I solved LeetCode problem 50. Add it to my revision tracker.</p>
+        </div>
+      </div>
+
+      <div class="chat-msg ai">
+        <div class="ai-avatar" style="width: 32px; height: 32px; flex-shrink: 0;"><i data-lucide="bot" style="width: 18px; height: 18px;"></i></div>
+        <div class="msg-bubble">
+          <p>I parsed your command:</p>
+          <p style="margin: 6px 0;">• <strong>Platform:</strong> LeetCode • <strong>Problem 50:</strong> Pow(x, n)<br>• <strong>Topic:</strong> Binary Search / Exponentiation</p>
+          <div class="ai-action-card" style="margin-top: 10px;">
+            <div class="ai-action-header"><i data-lucide="check-circle"></i> Ready to Add</div>
+            <div class="ai-action-body">Schedule 5 mandatory revision milestones (Days 3, 7, 12, 20, 30)?</div>
+            <a href="ai-assistant.html" class="btn btn-primary btn-sm">Try Interactive AI Assistant</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: FAQ Accordion -->
+  <section class="section" id="faq">
+    <div class="section-header">
+      <div class="section-tag">Got Questions?</div>
+      <h2 class="section-title">Frequently Asked Questions</h2>
+    </div>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>What is the spaced repetition interval used in ReviseCode?</span>
+          <i data-lucide="chevron-down" class="faq-icon"></i>
+        </button>
+        <div class="faq-answer">
+          ReviseCode enforces the proven scientific 5-milestone progression: Day 3, Day 7, Day 12, Day 20, and Day 30 following the date you solved the problem. You can also configure custom intervals (such as Day 45 or Day 60) in your Settings.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>What happens if I miss a scheduled milestone?</span>
+          <i data-lucide="chevron-down" class="faq-icon"></i>
+        </button>
+        <div class="faq-answer">
+          Missed milestones are marked Overdue but never deleted or forgotten. Unlike flawed systems, completing an overdue milestone does not silently postpone your future milestones, ensuring your long-term retention remains on track.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>Can I store handwritten iPad or whiteboard notes?</span>
+          <i data-lucide="chevron-down" class="faq-icon"></i>
+        </button>
+        <div class="faq-answer">
+          Yes! You can attach photos, whiteboard sketches, screenshots, and code snippets directly to any question. In the demo mode, image files are previewed and stored in local state.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>Does ReviseCode execute code in the browser?</span>
+          <i data-lucide="chevron-down" class="faq-icon"></i>
+        </button>
+        <div class="faq-answer">
+          No. ReviseCode is a spaced repetition and memory retention platform, not an unsafe code execution sandbox. We present clean syntax-formatted code for revision and active recall without running arbitrary untrusted scripts in your browser.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="section">
+    <div class="cta-banner">
+      <h2 style="font-size: 2.25rem; font-weight: 800; margin-bottom: 12px;">Start Remembering What You Learn Today</h2>
+      <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 24px; font-size: 16px;">
+        Join students and engineers who have mastered technical interviews with consistent, stress-free spaced revision.
+      </p>
+      <a href="dashboard.html" class="btn btn-primary btn-lg">
+        Open ReviseCode App Now <i data-lucide="arrow-right"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <div class="footer-container">
+      <div>
+        <a href="index.html" class="brand-logo" style="margin-bottom: 12px;">
+          <div class="brand-icon-wrapper">
+            <i data-lucide="repeat"></i>
+          </div>
+          <span class="brand-text">Revise<span>Code</span></span>
+        </a>
+        <p style="font-size: 13px; color: var(--text-muted); max-width: 320px; line-height: 1.6;">
+          Scientific spaced repetition for coders. Learn it. Save it. Revise it. Remember it.
+        </p>
+      </div>
+
+      <div>
+        <h5 class="footer-col-title">Product</h5>
+        <div class="footer-links">
+          <a href="dashboard.html" class="footer-link">Dashboard</a>
+          <a href="questions.html" class="footer-link">Questions</a>
+          <a href="revision-center.html" class="footer-link">Revision Center</a>
+          <a href="calendar.html" class="footer-link">Calendar</a>
+          <a href="ai-assistant.html" class="footer-link">AI Assistant</a>
+        </div>
+      </div>
+
+      <div>
+        <h5 class="footer-col-title">Resources</h5>
+        <div class="footer-links">
+          <a href="#how-it-works" class="footer-link">How It Works</a>
+          <a href="#schedule-demo" class="footer-link">Spaced Schedule</a>
+          <a href="#faq" class="footer-link">FAQ</a>
+          <a href="analytics.html" class="footer-link">Analytics</a>
+        </div>
+      </div>
+
+      <div>
+        <h5 class="footer-col-title">Account</h5>
+        <div class="footer-links">
+          <a href="login.html" class="footer-link">Sign In</a>
+          <a href="register.html" class="footer-link">Create Account</a>
+          <a href="settings.html" class="footer-link">Settings</a>
+          <a href="profile.html" class="footer-link">Profile</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 ReviseCode. All rights reserved.</span>
+      <div style="display: flex; gap: 16px;">
+        <a href="settings.html" class="footer-link">Privacy</a>
+        <a href="settings.html" class="footer-link">Terms</a>
+        <a href="settings.html" class="footer-link">Export Data</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/theme.js"></script>
+  <script>
+    // FAQ Accordion interaction
+    document.querySelectorAll('.faq-question').forEach(button => {
+      button.addEventListener('click', () => {
+        const item = button.closest('.faq-item');
+        item.classList.toggle('is-open');
+      });
+    });
+
+    // Initialize Lucide Icons
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

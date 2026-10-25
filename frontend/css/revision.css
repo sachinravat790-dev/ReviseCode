@@ -1,0 +1,385 @@
+/* ==========================================================================
+   ReviseCode Revision Center & Calendar Styles
+   ========================================================================== */
+
+/* Revision Center Layout */
+.revision-center-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xl);
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.revision-milestones-summary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-2xl);
+}
+
+.milestone-summary-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.milestone-summary-card.active {
+  border-color: var(--border-highlight);
+  background-color: var(--bg-surface-elevated);
+}
+
+.milestone-day-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.milestone-count-number {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
+}
+
+.milestone-desc-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Recall Workflow / Modal */
+.recall-workflow-card {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  margin-bottom: var(--space-xl);
+}
+
+.recall-step-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.recall-step-pill {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.recall-prompt-box {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+}
+
+.recall-solution-hidden {
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl);
+  border: 2px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  background: rgba(10, 13, 23, 0.4);
+  margin-bottom: var(--space-xl);
+}
+
+.recall-solution-revealed {
+  animation: fadeIn 0.3s ease;
+  margin-bottom: var(--space-xl);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Rating Recall Buttons */
+.recall-rating-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin: var(--space-xl) 0;
+}
+
+.rating-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.rating-btn i, .rating-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.rating-btn-easy {
+  color: var(--success);
+}
+
+.rating-btn-easy:hover, .rating-btn-easy.selected {
+  border-color: var(--success);
+  background-color: var(--success-surface);
+}
+
+.rating-btn-difficult {
+  color: var(--warning);
+}
+
+.rating-btn-difficult:hover, .rating-btn-difficult.selected {
+  border-color: var(--warning);
+  background-color: var(--warning-surface);
+}
+
+.rating-btn-forgot {
+  color: var(--danger);
+}
+
+.rating-btn-forgot:hover, .rating-btn-forgot.selected {
+  border-color: var(--danger);
+  background-color: var(--danger-surface);
+}
+
+.rating-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.rating-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Milestone Timeline Component */
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: var(--space-xl) 0;
+  padding-left: var(--space-xl);
+}
+
+.timeline-list::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 8px;
+  width: 2px;
+  background-color: var(--border-default);
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: var(--space-xl);
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: calc(-1 * var(--space-xl) + 2px);
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-surface);
+  border: 3px solid var(--border-default);
+  z-index: 1;
+}
+
+.timeline-item.completed .timeline-marker {
+  background-color: var(--success);
+  border-color: var(--success);
+}
+
+.timeline-item.due .timeline-marker {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary);
+}
+
+.timeline-item.overdue .timeline-marker {
+  background-color: var(--danger);
+  border-color: var(--danger);
+}
+
+.timeline-content {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Calendar View */
+.calendar-layout {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  gap: var(--space-xl);
+}
+
+.calendar-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+}
+
+.calendar-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xl);
+}
+
+.calendar-month-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.calendar-nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.calendar-weekdays-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+}
+
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.calendar-day-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-elevated);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.calendar-day-cell:hover {
+  border-color: var(--border-highlight);
+  background-color: var(--bg-surface-hover);
+}
+
+.calendar-day-cell.other-month {
+  opacity: 0.35;
+}
+
+.calendar-day-cell.is-today {
+  border-color: var(--primary);
+  background-color: rgba(124, 58, 237, 0.08);
+}
+
+.calendar-day-cell.is-selected {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 2px var(--accent-indigo);
+}
+
+.day-number {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.day-events-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.event-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+}
+
+.event-dot.due { background-color: var(--secondary); }
+.event-dot.overdue { background-color: var(--danger); }
+.event-dot.completed { background-color: var(--success); }
+
+/* Daily Agenda */
+.agenda-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  height: fit-content;
+}
+
+.agenda-header {
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-md);
+}
+
+.agenda-date-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 2px;
+}
+
+.agenda-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.agenda-item {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.agenda-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

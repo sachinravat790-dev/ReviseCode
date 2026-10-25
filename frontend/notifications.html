@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — ReviseCode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="brand-logo">
+          <div class="brand-icon-wrapper">
+            <i data-lucide="repeat"></i>
+          </div>
+          <span class="brand-text">Revise<span>Code</span></span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Navigation</div>
+        <a href="dashboard.html" class="nav-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="subjects.html" class="nav-link">
+          <i data-lucide="folder-kanban"></i>
+          <span>My Subjects</span>
+        </a>
+        <a href="questions.html" class="nav-link">
+          <i data-lucide="code-2"></i>
+          <span>All Questions</span>
+        </a>
+        <a href="revision-center.html" class="nav-link">
+          <i data-lucide="refresh-cw"></i>
+          <span>Revision Center</span>
+          <span class="nav-badge" id="sidebarDueBadge" style="display: none;">Due</span>
+        </a>
+        <a href="calendar.html" class="nav-link">
+          <i data-lucide="calendar"></i>
+          <span>Revision Calendar</span>
+        </a>
+
+        <div class="nav-section-title" style="margin-top: 16px;">Intelligence & Tools</div>
+        <a href="ai-assistant.html" class="nav-link">
+          <i data-lucide="sparkles"></i>
+          <span>AI Assistant</span>
+        </a>
+        <a href="analytics.html" class="nav-link">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="notifications.html" class="nav-link active">
+          <i data-lucide="bell"></i>
+          <span>Notifications</span>
+        </a>
+        <a href="settings.html" class="nav-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-snippet">
+          <div class="user-avatar">SK</div>
+          <div class="user-info">
+            <div class="user-name">Sachin Kumar</div>
+            <div class="user-role">Software Engineer</div>
+          </div>
+          <button class="icon-btn" id="logoutBtn" aria-label="Sign out">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="Toggle drawer">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="breadcrumbs">
+            <a href="dashboard.html">ReviseCode</a>
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+            <span style="color: var(--text-primary); font-weight: 500;">Notifications</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="search-trigger" aria-label="Search questions">
+            <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+            <span>Search questions, topics...</span>
+            <span class="search-kbd">⌘K</span>
+          </button>
+
+          <div class="topbar-actions">
+            <button class="icon-btn theme-toggle-btn" aria-label="Toggle theme">
+              <i data-lucide="sun"></i>
+            </button>
+            <a href="notifications.html" class="icon-btn" aria-label="Notifications">
+              <i data-lucide="bell"></i>
+              <span class="icon-badge" id="topbarNotifBadge"></span>
+            </a>
+
+            <div class="dropdown" id="userProfileDropdown">
+              <button class="user-avatar" id="userProfileMenuBtn" style="cursor: pointer; width: 34px; height: 34px; font-size: 13px;" aria-label="User menu">
+                SK
+              </button>
+              <div class="dropdown-menu">
+                <a href="profile.html" class="dropdown-item">
+                  <i data-lucide="user"></i> My Profile
+                </a>
+                <a href="settings.html" class="dropdown-item">
+                  <i data-lucide="sliders"></i> Preferences
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item text-danger" id="dropdownLogoutBtn">
+                  <i data-lucide="log-out"></i> Sign Out
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-xl); flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h1 class="page-title">Notifications & Alerts</h1>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+              Revision reminders, streak updates, and automated AI action reports.
+            </p>
+          </div>
+
+          <button class="btn btn-secondary btn-sm" id="markAllNotifsReadBtn">
+            <i data-lucide="check-check"></i> Mark All as Read
+          </button>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Left: Notifications List -->
+          <div>
+            <!-- Categories -->
+            <div class="tabs-nav" style="margin-bottom: var(--space-lg);">
+              <button class="tab-btn notif-filter-btn active" data-category="all">All Alerts</button>
+              <button class="tab-btn notif-filter-btn" data-category="Revisions">Due Revisions</button>
+              <button class="tab-btn notif-filter-btn" data-category="Overdue">Overdue</button>
+              <button class="tab-btn notif-filter-btn" data-category="AI Actions">AI Actions</button>
+              <button class="tab-btn notif-filter-btn" data-category="System">System</button>
+            </div>
+
+            <div class="revision-queue-list" id="notificationsListContainer">
+              <!-- Dynamically populated by js/notifications.js -->
+            </div>
+          </div>
+
+          <!-- Right: Notification Delivery Preferences -->
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Delivery Channels</h3>
+                  <p class="card-subtitle">Configure how and when you receive reminders</p>
+                </div>
+              </div>
+
+              <form id="notifPreferencesForm">
+                <div class="form-group">
+                  <label class="form-check" style="margin-bottom: 12px;">
+                    <input type="checkbox" id="prefInApp" checked>
+                    <span><strong>In-App Notifications</strong> (active tab alerts)</span>
+                  </label>
+
+                  <label class="form-check" style="margin-bottom: 12px;">
+                    <input type="checkbox" id="prefEmail" checked>
+                    <span><strong>Email Summaries</strong> (morning daily agenda)</span>
+                  </label>
+
+                  <label class="form-check">
+                    <input type="checkbox" id="prefWhatsApp">
+                    <span><strong>WhatsApp Alerts</strong> (optional milestone reminders)</span>
+                  </label>
+                  <p style="font-size: 11px; color: var(--text-muted); margin-left: 26px; margin-top: 4px;">
+                    * Note: Production WhatsApp / Email dispatch requires backend API keys (Twilio / SendGrid) and explicit phone number verification.
+                  </p>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Preferred Reminder Time</label>
+                  <input type="time" id="prefReminderTime" class="form-control" value="09:00">
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Quiet Hours Start</label>
+                    <input type="time" id="prefQuietStart" class="form-control" value="22:00">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Quiet Hours End</label>
+                    <input type="time" id="prefQuietEnd" class="form-control" value="08:00">
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                  Save Preferences
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/navigation.js"></script>
+  <script type="module" src="js/notifications.js"></script>
+</body>
+</html>

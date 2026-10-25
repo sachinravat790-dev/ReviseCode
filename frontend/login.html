@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — ReviseCode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body class="auth-page">
+
+  <div class="auth-split-layout">
+    <!-- Left Hero Panel -->
+    <div class="auth-hero-panel">
+      <div class="auth-hero-glow"></div>
+      
+      <div class="auth-hero-header">
+        <a href="index.html" class="brand-logo">
+          <div class="brand-icon-wrapper">
+            <i data-lucide="repeat"></i>
+          </div>
+          <span class="brand-text">Revise<span>Code</span></span>
+        </a>
+      </div>
+
+      <div class="auth-hero-body">
+        <div class="badge-demo" style="margin-bottom: 16px;">
+          <i data-lucide="shield"></i> Client-Side Demo Architecture
+        </div>
+        <h2 class="auth-hero-quote">
+          "The secret to cracking coding interviews is not solving 500 questions once. It is mastering 150 questions forever."
+        </h2>
+        <p class="auth-hero-sub">
+          Automate your spaced revision, beat the forgetting curve, and achieve recall confidence.
+        </p>
+
+        <div class="auth-benefit-list">
+          <div class="auth-benefit-item">
+            <div class="auth-benefit-icon"><i data-lucide="check"></i></div>
+            <span>Mandatory Day 3, 7, 12, 20, 30 milestone tracking</span>
+          </div>
+          <div class="auth-benefit-item">
+            <div class="auth-benefit-icon"><i data-lucide="check"></i></div>
+            <span>Active recall testing with solution concealment</span>
+          </div>
+          <div class="auth-benefit-item">
+            <div class="auth-benefit-icon"><i data-lucide="check"></i></div>
+            <span>AI assistant that schedules and tracks via natural language</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-hero-footer">
+        © 2026 ReviseCode • Built with HTML5, CSS3 & Vanilla JavaScript
+      </div>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="auth-form-panel">
+      <button class="icon-btn auth-theme-toggle theme-toggle-btn" aria-label="Toggle theme">
+        <i data-lucide="sun"></i>
+      </button>
+
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1 class="auth-title">Welcome Back</h1>
+          <p class="auth-subtitle">Sign in to your account or test the live demo mode.</p>
+        </div>
+
+        <!-- Demo Mode Notice -->
+        <div class="demo-credentials-box">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <strong>Demo Authentication Mode</strong>
+            <span class="badge badge-due" style="font-size: 10px;">Pre-configured</span>
+          </div>
+          <span>Use <code>sachin@example.com</code> / any password, or click:</span>
+          <button type="button" class="demo-fill-btn" id="fillDemoCredentialsBtn">Auto-fill & Explore</button>
+        </div>
+
+        <!-- Social Buttons -->
+        <div class="social-auth-group">
+          <button type="button" class="btn-social" id="btnGoogleAuth">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            Google
+          </button>
+
+          <button type="button" class="btn-social" id="btnGithubAuth">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            GitHub
+          </button>
+        </div>
+
+        <div class="auth-divider">
+          <span>or sign in with email</span>
+        </div>
+
+        <!-- Form -->
+        <form id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="loginEmail" class="form-label form-label-required">Email Address</label>
+            <div class="input-icon-wrapper">
+              <i data-lucide="mail"></i>
+              <input type="email" id="loginEmail" class="form-control" placeholder="name@example.com" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="loginPassword" class="form-label form-label-required" style="margin: 0;">Password</label>
+              <a href="forgot-password.html" style="font-size: 12px; color: var(--primary);">Forgot password?</a>
+            </div>
+            <div class="input-icon-wrapper">
+              <i data-lucide="lock"></i>
+              <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+              <i data-lucide="eye" class="icon-right" id="togglePasswordVisibility" title="Show/hide password"></i>
+            </div>
+          </div>
+
+          <div class="auth-meta-row">
+            <label class="form-check">
+              <input type="checkbox" id="rememberMe">
+              <span>Remember me</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitLoginBtn">
+            Sign In <i data-lucide="arrow-right"></i>
+          </button>
+        </form>
+
+        <div class="auth-footer-prompt">
+          Don't have an account yet? <a href="register.html" style="font-weight: 600; color: var(--primary);">Create account</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/theme.js"></script>
+  <script type="module">
+    import { AuthService } from './js/auth.js';
+    import { showToast } from './js/navigation.js';
+    import { isValidEmail, showInputError, clearAllErrors } from './js/validators.js';
+
+    // Show/hide password
+    const togglePass = document.getElementById('togglePasswordVisibility');
+    const passInput = document.getElementById('loginPassword');
+    if (togglePass && passInput) {
+      togglePass.onclick = () => {
+        const isPass = passInput.type === 'password';
+        passInput.type = isPass ? 'text' : 'password';
+        togglePass.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      };
+    }
+
+    // Auto-fill demo credentials
+    document.getElementById('fillDemoCredentialsBtn').onclick = () => {
+      document.getElementById('loginEmail').value = 'sachin@example.com';
+      document.getElementById('loginPassword').value = 'DemoPass123!';
+      showToast('Credentials Filled', 'Ready to sign in with demo profile.', 'info');
+    };
+
+    // Social buttons demo notice
+    document.getElementById('btnGoogleAuth').onclick = () => {
+      showToast('Firebase OAuth Notice', 'Google sign-in integration point ready. Configure your Firebase Google Auth provider in production.', 'info');
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    };
+
+    document.getElementById('btnGithubAuth').onclick = () => {
+      showToast('Firebase OAuth Notice', 'GitHub sign-in integration point ready. Configure your Firebase GitHub Auth provider in production.', 'info');
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    };
+
+    // Form submit
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      clearAllErrors(e.target);
+
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const rememberMe = document.getElementById('rememberMe').checked;
+
+      let hasError = false;
+      if (!email) {
+        showInputError(document.getElementById('loginEmail'), 'Email is required');
+        hasError = true;
+      } else if (!isValidEmail(email)) {
+        showInputError(document.getElementById('loginEmail'), 'Please enter a valid email address');
+        hasError = true;
+      }
+
+      if (!password) {
+        showInputError(document.getElementById('loginPassword'), 'Password is required');
+        hasError = true;
+      }
+
+      if (hasError) return;
+
+      const submitBtn = document.getElementById('submitLoginBtn');
+      submitBtn.setAttribute('disabled', 'true');
+      submitBtn.innerHTML = 'Signing in...';
+
+      try {
+        await AuthService.login({ email, password, rememberMe });
+        showToast('Success', 'Welcome back to ReviseCode!', 'success');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 600);
+      } catch (err) {
+        showToast('Login Error', err.message || 'Unable to sign in', 'error');
+        submitBtn.removeAttribute('disabled');
+        submitBtn.innerHTML = 'Sign In <i data-lucide="arrow-right"></i>';
+        if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bilingual Voice Recognition Browser Test Runner</title>
+</head>
+<body>
+  <h1>Browser Bilingual Test Runner</h1>
+
+  <!-- AI Assistant Markup -->
+  <div id="chatMessagesArea"></div>
+
+  <div id="voiceStatusIndicator" class="voice-status-indicator" style="display: none;">
+    <div class="voice-status-dot"></div>
+    <span id="voiceLangBadge" class="voice-lang-badge">EN</span>
+    <span id="voiceStatusText"></span>
+    <button type="button" id="voiceCancelBtn">Cancel</button>
+  </div>
+
+  <form id="chatInputForm">
+    <textarea id="chatInputTextarea"></textarea>
+    <select id="voiceLangSelect">
+      <option value="en-IN">English (India) — en-IN</option>
+      <option value="hi-IN">Hindi (India) — hi-IN (हिंदी)</option>
+      <option value="auto">Auto (Browser Default)</option>
+    </select>
+    <button type="button" id="chatMicBtn">Mic</button>
+    <button type="submit" id="chatSendBtn">Send</button>
+  </form>
+
+  <div id="test-results">Running tests...</div>
+
+  <script type="module">
+    import { VoiceInputController, VOICE_LANGUAGE_STORAGE_KEY } from '../js/ai-assistant.js';
+
+    const results = [];
+    function assert(desc, condition) {
+      results.push({ desc, pass: Boolean(condition) });
+    }
+
+    try {
+      // 1. Chrome Web Speech API check
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      assert('Chrome Web Speech API (webkitSpeechRecognition) exists in browser', Boolean(SpeechRecognition));
+
+      // 2. Initialize VoiceInputController in real Chrome
+      const micBtn = document.getElementById('chatMicBtn');
+      const langSelect = document.getElementById('voiceLangSelect');
+      const langBadge = document.getElementById('voiceLangBadge');
+      const inputElement = document.getElementById('chatInputTextarea');
+      const statusContainer = document.getElementById('voiceStatusIndicator');
+      const statusText = document.getElementById('voiceStatusText');
+      const cancelBtn = document.getElementById('voiceCancelBtn');
+      const inputForm = document.getElementById('chatInputForm');
+
+      const controller = new VoiceInputController({
+        micBtn,
+        langSelect,
+        langBadge,
+        inputElement,
+        statusContainer,
+        statusText,
+        cancelBtn,
+        inputForm,
+        onToast: (title, msg) => console.log('Toast:', title, msg)
+      });
+
+      assert('VoiceInputController is supported in Chrome', controller.isSupported());
+
+      // 3. Test Hindi (hi-IN) configuration
+      await controller.setLanguage('hi-IN');
+      assert('Selected language is hi-IN', controller.selectedLang === 'hi-IN');
+      assert('Language dropdown value is hi-IN', langSelect.value === 'hi-IN');
+
+      const hindiRecognition = controller.createRecognitionInstance();
+      assert('Recognition instance configured with lang="hi-IN"', hindiRecognition.lang === 'hi-IN');
+
+      // 4. Test English (en-IN) configuration
+      await controller.setLanguage('en-IN');
+      assert('Selected language is en-IN', controller.selectedLang === 'en-IN');
+      assert('Language dropdown value is en-IN', langSelect.value === 'en-IN');
+
+      const englishRecognition = controller.createRecognitionInstance();
+      assert('Recognition instance configured with lang="en-IN"', englishRecognition.lang === 'en-IN');
+
+      // 5. Test Auto language configuration
+      await controller.setLanguage('auto');
+      assert('Selected language is auto', controller.selectedLang === 'auto');
+      const autoRecognition = controller.createRecognitionInstance();
+      assert('Auto mode resolves to valid locale (en-IN or hi-IN)', autoRecognition.lang === 'en-IN' || autoRecognition.lang === 'hi-IN');
+
+      // 6. Test Hindi Devanagari text insertion and preservation
+      await controller.setLanguage('hi-IN');
+      inputElement.value = '';
+      controller.updateInputValue('आज के पेंडिंग रिवीजन दिखाओ');
+      assert(
+        'Devanagari Hindi text preserved in textarea',
+        inputElement.value === 'आज के पेंडिंग रिवीजन दिखाओ'
+      );
+
+      // 7. Test English text insertion
+      inputElement.value = '';
+      controller.updateInputValue('Show today pending revisions');
+      assert(
+        'English text preserved in textarea',
+        inputElement.value === 'Show today pending revisions'
+      );
+
+      // Render summary
+      const allPassed = results.every(r => r.pass);
+      const summary = `
+        <div data-status="${allPassed ? 'PASSED' : 'FAILED'}">
+          <h2>Browser Bilingual Tests: ${allPassed ? 'ALL PASSED' : 'SOME FAILED'}</h2>
+          <ul>
+            ${results.map(r => `<li style="color:${r.pass ? 'green' : 'red'}">${r.pass ? '✔ PASS' : '✖ FAIL'}: ${r.desc}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+      document.getElementById('test-results').innerHTML = summary;
+    } catch (err) {
+      document.getElementById('test-results').innerHTML = `<div data-status="ERROR">Error: ${err.message}\n${err.stack}</div>`;
+    }
+  </script>
+</body>
+</html>

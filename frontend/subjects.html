@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Subjects — ReviseCode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="brand-logo">
+          <div class="brand-icon-wrapper">
+            <i data-lucide="repeat"></i>
+          </div>
+          <span class="brand-text">Revise<span>Code</span></span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Navigation</div>
+        <a href="dashboard.html" class="nav-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="subjects.html" class="nav-link active">
+          <i data-lucide="folder-kanban"></i>
+          <span>My Subjects</span>
+        </a>
+        <a href="questions.html" class="nav-link">
+          <i data-lucide="code-2"></i>
+          <span>All Questions</span>
+        </a>
+        <a href="revision-center.html" class="nav-link">
+          <i data-lucide="refresh-cw"></i>
+          <span>Revision Center</span>
+          <span class="nav-badge" id="sidebarDueBadge" style="display: none;">Due</span>
+        </a>
+        <a href="calendar.html" class="nav-link">
+          <i data-lucide="calendar"></i>
+          <span>Revision Calendar</span>
+        </a>
+
+        <div class="nav-section-title" style="margin-top: 16px;">Intelligence & Tools</div>
+        <a href="ai-assistant.html" class="nav-link">
+          <i data-lucide="sparkles"></i>
+          <span>AI Assistant</span>
+        </a>
+        <a href="analytics.html" class="nav-link">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="notifications.html" class="nav-link">
+          <i data-lucide="bell"></i>
+          <span>Notifications</span>
+        </a>
+        <a href="settings.html" class="nav-link">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-snippet">
+          <div class="user-avatar">SK</div>
+          <div class="user-info">
+            <div class="user-name">Sachin Kumar</div>
+            <div class="user-role">Software Engineer</div>
+          </div>
+          <button class="icon-btn" id="logoutBtn" aria-label="Sign out">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="Toggle drawer">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="breadcrumbs">
+            <a href="dashboard.html">ReviseCode</a>
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+            <span style="color: var(--text-primary); font-weight: 500;">My Subjects</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="search-trigger" aria-label="Search questions">
+            <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+            <span>Search questions, topics...</span>
+            <span class="search-kbd">⌘K</span>
+          </button>
+
+          <div class="topbar-actions">
+            <button class="icon-btn theme-toggle-btn" aria-label="Toggle theme">
+              <i data-lucide="sun"></i>
+            </button>
+            <a href="notifications.html" class="icon-btn" aria-label="Notifications">
+              <i data-lucide="bell"></i>
+              <span class="icon-badge" id="topbarNotifBadge"></span>
+            </a>
+
+            <div class="dropdown" id="userProfileDropdown">
+              <button class="user-avatar" id="userProfileMenuBtn" style="cursor: pointer; width: 34px; height: 34px; font-size: 13px;" aria-label="User menu">
+                SK
+              </button>
+              <div class="dropdown-menu">
+                <a href="profile.html" class="dropdown-item">
+                  <i data-lucide="user"></i> My Profile
+                </a>
+                <a href="settings.html" class="dropdown-item">
+                  <i data-lucide="sliders"></i> Preferences
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item text-danger" id="dropdownLogoutBtn">
+                  <i data-lucide="log-out"></i> Sign Out
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-xl); flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h1 class="page-title">My Subjects</h1>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+              Organize your technical problem-solving by domains, topics, and question counts.
+            </p>
+          </div>
+
+          <button class="btn btn-primary" id="addSubjectBtn">
+            <i data-lucide="plus"></i> Add Subject
+          </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="card" style="padding: 14px; margin-bottom: var(--space-xl);">
+          <div class="input-icon-wrapper">
+            <i data-lucide="search"></i>
+            <input type="text" id="subjectsSearchInput" class="form-control" placeholder="Filter subjects or topics by keyword...">
+          </div>
+        </div>
+
+        <!-- Subjects Grid -->
+        <div class="questions-grid" id="subjectsGrid">
+          <!-- Dynamically populated by js/subjects.js -->
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Add / Edit Subject Modal -->
+  <div class="modal-backdrop" id="subjectModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="subjectModalTitle">Add New Subject</h3>
+        <button class="modal-close" id="subjectModalClose"><i data-lucide="x"></i></button>
+      </div>
+      <form id="subjectForm">
+        <input type="hidden" id="subjectId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="subjectNameInput" class="form-label form-label-required">Subject Name</label>
+            <input type="text" id="subjectNameInput" class="form-control" placeholder="e.g. System Design, Dynamic Programming" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="subjectColorInput" class="form-label">Theme Color</label>
+              <input type="color" id="subjectColorInput" class="form-control" value="#7c3aed" style="height: 42px; padding: 4px;">
+            </div>
+
+            <div class="form-group">
+              <label for="subjectIconSelect" class="form-label">Subject Icon</label>
+              <select id="subjectIconSelect" class="form-control">
+                <option value="binary">Binary / Code</option>
+                <option value="database">Database / SQL</option>
+                <option value="globe">Web / Browser</option>
+                <option value="calculator">Aptitude / Math</option>
+                <option value="cpu">System / Architecture</option>
+                <option value="folder">Folder / General</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="subjectTopicsInput" class="form-label">Topics (comma-separated)</label>
+            <input type="text" id="subjectTopicsInput" class="form-control" placeholder="e.g. Arrays, Trees, Graphs, Greedy">
+            <span class="form-hint">Topics help you group related problems under this subject.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="subjectModalCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveSubjectBtn">Save Subject</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/navigation.js"></script>
+  <script type="module" src="js/subjects.js"></script>
+</body>
+</html>

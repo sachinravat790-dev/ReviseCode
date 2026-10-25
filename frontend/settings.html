@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — ReviseCode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="brand-logo">
+          <div class="brand-icon-wrapper">
+            <i data-lucide="repeat"></i>
+          </div>
+          <span class="brand-text">Revise<span>Code</span></span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Navigation</div>
+        <a href="dashboard.html" class="nav-link">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="subjects.html" class="nav-link">
+          <i data-lucide="folder-kanban"></i>
+          <span>My Subjects</span>
+        </a>
+        <a href="questions.html" class="nav-link">
+          <i data-lucide="code-2"></i>
+          <span>All Questions</span>
+        </a>
+        <a href="revision-center.html" class="nav-link">
+          <i data-lucide="refresh-cw"></i>
+          <span>Revision Center</span>
+          <span class="nav-badge" id="sidebarDueBadge" style="display: none;">Due</span>
+        </a>
+        <a href="calendar.html" class="nav-link">
+          <i data-lucide="calendar"></i>
+          <span>Revision Calendar</span>
+        </a>
+
+        <div class="nav-section-title" style="margin-top: 16px;">Intelligence & Tools</div>
+        <a href="ai-assistant.html" class="nav-link">
+          <i data-lucide="sparkles"></i>
+          <span>AI Assistant</span>
+        </a>
+        <a href="analytics.html" class="nav-link">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="notifications.html" class="nav-link">
+          <i data-lucide="bell"></i>
+          <span>Notifications</span>
+        </a>
+        <a href="settings.html" class="nav-link active">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-snippet">
+          <div class="user-avatar">SK</div>
+          <div class="user-info">
+            <div class="user-name">Sachin Kumar</div>
+            <div class="user-role">Software Engineer</div>
+          </div>
+          <button class="icon-btn" id="logoutBtn" aria-label="Sign out">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="Toggle drawer">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="breadcrumbs">
+            <a href="dashboard.html">ReviseCode</a>
+            <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+            <span style="color: var(--text-primary); font-weight: 500;">Settings</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="search-trigger" aria-label="Search questions">
+            <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+            <span>Search questions, topics...</span>
+            <span class="search-kbd">⌘K</span>
+          </button>
+
+          <div class="topbar-actions">
+            <button class="icon-btn theme-toggle-btn" aria-label="Toggle theme">
+              <i data-lucide="sun"></i>
+            </button>
+            <a href="notifications.html" class="icon-btn" aria-label="Notifications">
+              <i data-lucide="bell"></i>
+              <span class="icon-badge" id="topbarNotifBadge"></span>
+            </a>
+
+            <div class="dropdown" id="userProfileDropdown">
+              <button class="user-avatar" id="userProfileMenuBtn" style="cursor: pointer; width: 34px; height: 34px; font-size: 13px;" aria-label="User menu">
+                SK
+              </button>
+              <div class="dropdown-menu">
+                <a href="profile.html" class="dropdown-item">
+                  <i data-lucide="user"></i> My Profile
+                </a>
+                <a href="settings.html" class="dropdown-item">
+                  <i data-lucide="sliders"></i> Preferences
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item text-danger" id="dropdownLogoutBtn">
+                  <i data-lucide="log-out"></i> Sign Out
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <div style="margin-bottom: var(--space-xl);">
+          <h1 class="page-title">Application Settings</h1>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+            Manage your account, visual theme, spaced repetition schedule, and data exports.
+          </p>
+        </div>
+
+        <!-- Settings Navigation Tabs -->
+        <div class="tabs-nav">
+          <button class="tab-btn settings-nav-btn active" data-target="sectionProfile">
+            <i data-lucide="user" style="width: 16px; display: inline; vertical-align: middle;"></i> Profile
+          </button>
+          <button class="tab-btn settings-nav-btn" data-target="sectionAppearance">
+            <i data-lucide="palette" style="width: 16px; display: inline; vertical-align: middle;"></i> Appearance
+          </button>
+          <button class="tab-btn settings-nav-btn" data-target="sectionRevision">
+            <i data-lucide="clock" style="width: 16px; display: inline; vertical-align: middle;"></i> Revision Preferences
+          </button>
+          <button class="tab-btn settings-nav-btn" data-target="sectionAi">
+            <i data-lucide="sparkles" style="width: 16px; display: inline; vertical-align: middle;"></i> AI & Gemini API
+          </button>
+          <button class="tab-btn settings-nav-btn" data-target="sectionData">
+            <i data-lucide="database" style="width: 16px; display: inline; vertical-align: middle;"></i> Data Management
+          </button>
+        </div>
+
+        <!-- Section 1: Profile -->
+        <div class="settings-section" id="sectionProfile">
+          <div class="card" style="max-width: 680px;">
+            <div class="card-header">
+              <h3 class="card-title">Personal Profile</h3>
+            </div>
+
+            <form id="settingsProfileForm">
+              <div class="form-group">
+                <label for="setProfileName" class="form-label form-label-required">Display Name</label>
+                <input type="text" id="setProfileName" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                <label for="setProfileEmail" class="form-label">Email Address (Demo mode)</label>
+                <input type="email" id="setProfileEmail" class="form-control" disabled>
+                <span class="form-hint">Email updates are managed via your authentication provider.</span>
+              </div>
+
+              <div class="form-group">
+                <label for="setProfileRole" class="form-label">Role / Bio</label>
+                <input type="text" id="setProfileRole" class="form-control">
+              </div>
+
+              <div class="form-group">
+                <label for="setProfileInterests" class="form-label">Subject Interests (comma-separated)</label>
+                <input type="text" id="setProfileInterests" class="form-control">
+              </div>
+
+              <button type="submit" class="btn btn-primary">Save Profile Changes</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Section 2: Appearance -->
+        <div class="settings-section" id="sectionAppearance" style="display: none;">
+          <div class="card" style="max-width: 680px;">
+            <div class="card-header">
+              <h3 class="card-title">Theme & Visual Experience</h3>
+            </div>
+
+            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px;">
+              ReviseCode defaults to a dark navy theme with violet and indigo accents, engineered for prolonged late-night coding sessions.
+            </p>
+
+            <div class="form-group">
+              <label class="form-check" style="margin-bottom: 16px;">
+                <input type="radio" name="themeRadio" id="themeRadioDark" value="dark">
+                <span>
+                  <strong>Deep Navy (Default Dark Theme)</strong><br>
+                  <span style="font-size: 12px; color: var(--text-muted);">Charcoal/navy surfaces, violet gradients, reduced eye strain</span>
+                </span>
+              </label>
+
+              <label class="form-check">
+                <input type="radio" name="themeRadio" id="themeRadioLight" value="light">
+                <span>
+                  <strong>Clean Slate (Light Theme)</strong><br>
+                  <span style="font-size: 12px; color: var(--text-muted);">Crisp white surfaces with violet brand accents</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Revision Preferences -->
+        <div class="settings-section" id="sectionRevision" style="display: none;">
+          <div class="card" style="max-width: 680px;">
+            <div class="card-header">
+              <h3 class="card-title">Spaced Repetition Configuration</h3>
+            </div>
+
+            <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+              <h4 style="font-size: 14px; color: var(--text-primary); margin-bottom: 6px;">Mandatory Spaced Milestones</h4>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                ReviseCode automatically enforces 5 non-negotiable milestones for every question: 
+                <strong>Day 3, Day 7, Day 12, Day 20, and Day 30</strong>. These intervals are mathematically calibrated according to the Ebbinghaus forgetting curve.
+              </p>
+            </div>
+
+            <form id="revisionPrefsForm">
+              <div class="form-group">
+                <label for="setDailyGoal" class="form-label">Daily Revision Target (Questions per day)</label>
+                <input type="number" id="setDailyGoal" class="form-control" min="1" max="50" value="3">
+                <span class="form-hint">Used to calculate your daily learning streak status.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-check">
+                  <input type="checkbox" id="setEnableCustomIntervals">
+                  <span>Enable optional long-term intervals (Day 45, Day 60)</span>
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Update Revision Settings</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Section 4: AI & Gemini API -->
+        <div class="settings-section" id="sectionAi" style="display: none;">
+          <div class="card" style="max-width: 680px;">
+            <div class="card-header">
+              <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="sparkles" style="color: var(--primary);"></i> Google Gemini API Integration
+              </h3>
+            </div>
+
+            <!-- Current Status Card -->
+            <div id="settingsGeminiStatusCard" style="padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; font-size: 13px; line-height: 1.5;">
+              <!-- Populated dynamically -->
+            </div>
+
+            <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+              <h4 style="font-size: 14px; color: var(--text-primary); margin-bottom: 6px;">How to configure Gemini API:</h4>
+              <p style="margin-bottom: 8px;">
+                ReviseCode uses Google Gemini (<code>gemini-2.5-flash</code>) for arbitrary coding, algorithmic, system design, and mathematics reasoning in Hindi, English, and Hinglish.
+              </p>
+              <ol style="padding-left: 20px; margin-bottom: 8px;">
+                <li>Get a free Gemini API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: underline;">Google AI Studio</a>.</li>
+                <li>Enter the API key below and click <strong>Test & Save Key</strong>.</li>
+                <li>Alternatively, add <code>GEMINI_API_KEY=your_key</code> in your <code>backend/.env</code> file.</li>
+              </ol>
+            </div>
+
+            <form id="settingsGeminiForm">
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label for="settingsGeminiKeyInput" class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>Gemini API Key</span>
+                  <span id="settingsGeminiKeyMasked" style="font-size: 12px; color: var(--text-muted);"></span>
+                </label>
+                <div style="position: relative;">
+                  <input type="password" id="settingsGeminiKeyInput" class="form-control" placeholder="Paste your AIzaSy... key" autocomplete="off" spellcheck="false" style="padding-right: 40px; font-family: var(--font-family-mono); font-size: 13px;">
+                  <button type="button" id="settingsToggleKeyVisibility" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px;" aria-label="Toggle key visibility">
+                    <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+                  </button>
+                </div>
+                <span class="form-hint">Stored strictly in backend environment variables. Never returned to frontend network requests.</span>
+              </div>
+
+              <div id="settingsGeminiFeedback" style="display: none; padding: 12px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px;"></div>
+
+              <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button type="button" class="btn btn-outline" id="settingsTestGeminiBtn">
+                  <i data-lucide="activity"></i> Test Connection
+                </button>
+                <button type="button" class="btn btn-outline text-danger" id="settingsRemoveGeminiBtn" style="display: none;">
+                  <i data-lucide="trash-2"></i> Disconnect
+                </button>
+                <button type="submit" class="btn btn-primary" id="settingsSaveGeminiBtn">
+                  <i data-lucide="check"></i> Test & Save Key
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Section 5: Data Management -->
+        <div class="settings-section" id="sectionData" style="display: none;">
+          <div class="card" style="max-width: 680px;">
+            <div class="card-header">
+              <h3 class="card-title">Data Management & Persistence</h3>
+            </div>
+
+            <div style="background-color: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+              <h4 style="font-size: 14px; color: var(--secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="info" style="width: 16px; height: 16px;"></i> Storage Architecture Notice
+              </h4>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px;">
+                The ReviseCode backend API currently operates in <strong>In-Memory Storage Mode</strong>. All questions, revisions, subjects, and session logs are held in memory by the Express backend service.
+              </p>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+                Note: In-memory data will reset to default seeds whenever the backend server restarts. Use the <strong>Export Data</strong> feature below to download JSON snapshots. Permanent database persistence (e.g., PostgreSQL, MongoDB, or Cloud Firestore) can be configured in production.
+              </p>
+            </div>
+
+            <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 20px;">
+              <h4 style="font-size: 14px; margin-bottom: 6px;">Export Your Questions & History</h4>
+              <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+                Download your complete questions, handwritten attachments, and revision session logs in standard JSON format.
+              </p>
+              <button type="button" class="btn btn-secondary" id="exportDataBtn">
+                <i data-lucide="download"></i> Export Data (JSON)
+              </button>
+            </div>
+
+            <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 20px;">
+              <h4 style="font-size: 14px; margin-bottom: 6px;">Reset Demo Dataset</h4>
+              <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+                Re-seeds the demo dataset with standard LeetCode problems (50, 53, 121, 134, 189, 209).
+              </p>
+              <button type="button" class="btn btn-outline" id="resetDemoDataBtn">
+                <i data-lucide="refresh-cw"></i> Reset Demo Data
+              </button>
+            </div>
+
+            <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 20px;">
+              <h4 style="font-size: 14px; margin-bottom: 6px;">Sign Out</h4>
+              <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+                End your current session.
+              </p>
+              <button type="button" class="btn btn-secondary" id="settingsSignOutBtn">
+                <i data-lucide="log-out"></i> Sign Out
+              </button>
+            </div>
+
+            <div>
+              <h4 style="font-size: 14px; color: var(--danger); margin-bottom: 6px;">Danger Zone</h4>
+              <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+                Permanently purge your local records and credentials.
+              </p>
+              <button type="button" class="btn btn-danger-outline" id="deleteAccountBtn">
+                <i data-lucide="trash-2"></i> Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/theme.js"></script>
+  <script type="module" src="js/navigation.js"></script>
+  <script type="module" src="js/settings.js"></script>
+</body>
+</html>
