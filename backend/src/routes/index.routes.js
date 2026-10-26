@@ -12,7 +12,7 @@ import whatsappRoutes from './whatsapp.routes.js';
 
 const router = Router();
 
-router.use('/', healthRoutes);
+router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/questions', questionsRoutes);
 router.use('/subjects', subjectsRoutes);

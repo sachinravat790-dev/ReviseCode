@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "ReviseCode Workspace",
   "scripts": {
-    "start": "node frontend/local-server.cjs 3000",
+    "start": "node backend/src/server.js",
     "start:backend": "node backend/src/server.js",
+    "start:frontend": "node frontend/local-server.cjs 3000",
     "test:backend": "npm test --prefix backend",
     "test:frontend": "node --test frontend/tests/*.test.mjs",
     "test": "npm run test:backend && npm run test:frontend",

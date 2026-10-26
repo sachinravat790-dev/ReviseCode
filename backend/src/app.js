@@ -5,6 +5,7 @@ import { requestLogger } from './middleware/request-logger.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 import apiRoutes from './routes/index.routes.js';
+import authRoutes from './routes/auth.routes.js';
 import { successResponse } from './utils/api-response.js';
 
 const app = express();
@@ -61,6 +62,10 @@ if (config.nodeEnv !== 'test') {
 
 // Mount all API endpoints under /api
 app.use('/api', apiRoutes);
+
+// Explicit direct mounts for core auth endpoints to ensure routing works across /api and root
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 
 // Root path friendly message
 app.get('/', (req, res) => {

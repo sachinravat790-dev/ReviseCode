@@ -4,7 +4,7 @@ import { config, isSupabaseConfigured } from '../config/env.js';
 
 const router = Router();
 
-router.get('/health', (req, res) => {
+const sendHealth = (req, res) => {
   return successResponse(res, {
     statusCode: 200,
     message: 'ReviseCode backend is running healthy',
@@ -18,6 +18,9 @@ router.get('/health', (req, res) => {
       storageEngine: 'Supabase PostgreSQL'
     }
   });
-});
+};
+
+router.get('/', sendHealth);
+router.get('/health', sendHealth);
 
 export default router;

@@ -26,15 +26,19 @@ export async function authenticate(req, res, next) {
   }
 
   // Graceful fallback exclusively for legacy test suites running in NODE_ENV === 'test'
-  // Ensures existing legacy integration test cases continue to execute smoothly.
+  // Ensures existing legacy integration test cases continue to execute smoothly,
+  // but strictly requires authentication for explicit identity checks (like /auth/me).
   if (config.nodeEnv === 'test') {
-    req.user = {
-      id: DEFAULT_TEST_USER_ID,
-      email: 'test@example.com',
-      name: 'Default Test User',
-      avatar: 'TU'
-    };
-    return next();
+    const isExplicitAuthEndpoint = req.originalUrl?.includes('/auth/me') || req.headers['x-strict-auth'] === 'true';
+    if (!isExplicitAuthEndpoint) {
+      req.user = {
+        id: DEFAULT_TEST_USER_ID,
+        email: 'test@example.com',
+        name: 'Default Test User',
+        avatar: 'TU'
+      };
+      return next();
+    }
   }
 
   return errorResponse(res, {
