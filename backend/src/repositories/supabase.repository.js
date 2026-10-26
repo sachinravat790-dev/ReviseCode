@@ -6,7 +6,7 @@
 
 import crypto from 'crypto';
 import { getSupabaseClient } from '../config/supabase.js';
-import { computeRevisionStatus, getTodayDateString } from '../utils/dates.js';
+import { computeRevisionStatus, getTodayDateString, addDays } from '../utils/dates.js';
 import { config } from '../config/env.js';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -102,6 +102,7 @@ export function mapRevisionFromDb(row, question = null) {
 
   return {
     id: row.id,
+    userId: row.user_id || row.userId || null,
     questionId: row.question_id,
     questionTitle: q?.title || row.question_title || '',
     platform: q?.platform || '',
@@ -123,6 +124,7 @@ export function mapSessionFromDb(row, questionTitle = '') {
   if (!row) return null;
   return {
     id: row.id,
+    userId: row.user_id || row.userId || null,
     revisionId: row.revision_id,
     questionId: row.question_id,
     questionTitle: questionTitle || row.questions?.title || '',
@@ -137,6 +139,7 @@ export function mapNotificationFromDb(row) {
   if (!row) return null;
   return {
     id: row.id,
+    userId: row.user_id || row.userId || null,
     type: row.type,
     category: row.category || 'Revisions',
     title: row.title,
@@ -199,6 +202,18 @@ export function isSchemaOrColumnError(err) {
   );
 }
 
+export function isMissingColumnError(err) {
+  if (!err) return false;
+  const msg = String(err.message || '').toLowerCase();
+  const code = String(err.code || '');
+  return (
+    code === '42703' ||
+    code === 'PGRST204' ||
+    msg.includes('user_id') ||
+    (msg.includes('column') && (msg.includes('does not exist') || msg.includes('not find')))
+  );
+}
+
 /**
  * In production mode, halts silent ephemeral fallbacks if a required table is missing.
  */
@@ -225,6 +240,7 @@ export class SupabaseRepository {
     this._inMemorySessions = [];
     this._inMemoryNotifications = [];
     this._inMemorySettings = null;
+    this._inMemoryUserSettings = new Map();
     this._cachedSubjectsExtra = new Map();
     this._cachedQuestionsExtra = new Map();
     this._missingTables = new Map();
@@ -252,19 +268,29 @@ export class SupabaseRepository {
   // SUBJECTS
   // ==========================================
 
-  async getAllSubjects() {
+  async getAllSubjects(userId = null) {
     const fetchSubjects = this.client
       .from('subjects')
       .select('*')
       .order('name', { ascending: true });
 
-    const fetchQuestions = this.client
+    let fetchQuestions = this.client
       .from('questions')
-      .select('id, subject_id');
+      .select('id, subject_id, user_id');
+    if (userId) {
+      fetchQuestions = fetchQuestions.eq('user_id', userId);
+    }
 
-    const fetchRevisions = this._isTableMissing('revisions')
-      ? Promise.resolve({ data: Array.from(this._inMemoryRevisions.values()), error: null })
-      : this.client.from('revisions').select('id, question_id, due_date, completed_at');
+    let fetchRevisions;
+    if (this._isTableMissing('revisions')) {
+      let inMem = Array.from(this._inMemoryRevisions.values());
+      if (userId) inMem = inMem.filter(r => (r.user_id || r.userId) === userId);
+      fetchRevisions = Promise.resolve({ data: inMem, error: null });
+    } else {
+      let query = this.client.from('revisions').select('id, question_id, due_date, completed_at, user_id');
+      if (userId) query = query.eq('user_id', userId);
+      fetchRevisions = query;
+    }
 
     const [subRes, qRes, revRes] = await Promise.all([
       Promise.resolve(fetchSubjects).catch(err => ({ data: null, error: err })),
@@ -279,17 +305,25 @@ export class SupabaseRepository {
 
     let questions = [];
     if (qRes.error) {
-      console.warn('Database warning: Unable to fetch questions for subject stats:', qRes.error.message);
+      if ((qRes.error.code === '42703' || isMissingColumnError(qRes.error)) && userId) {
+        questions = [];
+      } else {
+        const { data: fb } = await this.client.from('questions').select('id, subject_id');
+        questions = fb || [];
+      }
     } else {
       questions = qRes.data || [];
     }
 
     let revisions = [];
     if (revRes.error) {
-      if (isSchemaOrColumnError(revRes.error)) {
+      if ((revRes.error.code === '42703' || isMissingColumnError(revRes.error)) && userId) {
+        revisions = [];
+      } else if (isSchemaOrColumnError(revRes.error)) {
         this._markTableMissing('revisions');
-        console.warn('Database warning: revisions table not available in schema cache. Using in-memory fallback for pending revision counts.');
-        revisions = Array.from(this._inMemoryRevisions.values());
+        let inMem = Array.from(this._inMemoryRevisions.values());
+        if (userId) inMem = inMem.filter(r => (r.user_id || r.userId) === userId);
+        revisions = inMem;
       } else {
         console.warn('Database warning: Failed to compute subject revision stats:', revRes.error.message);
       }
@@ -319,7 +353,7 @@ export class SupabaseRepository {
     });
   }
 
-  async getSubjectById(id) {
+  async getSubjectById(id, userId = null) {
     if (!id) return null;
     let query = this.client.from('subjects').select('*');
     if (isValidUuid(id)) {
@@ -339,14 +373,24 @@ export class SupabaseRepository {
 
     let questions = [];
     try {
-      const { data: qData, error: qErr } = await this.client
+      let qQuery = this.client
         .from('questions')
         .select('*')
         .eq('subject_id', data.id)
         .order('created_at', { ascending: false });
 
+      if (userId) {
+        qQuery = qQuery.eq('user_id', userId);
+      }
+
+      const { data: qData, error: qErr } = await qQuery;
+
       if (qErr) {
-        console.warn(`Database warning: Failed to fetch questions for subject "${id}":`, qErr.message);
+        if ((qErr.code === '42703' || isMissingColumnError(qErr)) && userId) {
+          questions = [];
+        } else {
+          console.warn(`Database warning: Failed to fetch questions for subject "${id}":`, qErr.message);
+        }
       } else {
         questions = qData || [];
       }
@@ -548,10 +592,14 @@ export class SupabaseRepository {
   // QUESTIONS
   // ==========================================
 
-  async getAllQuestions({ search, subject, subjectId, topic, difficulty, platform, bookmarked, page = 1, limit = 50 } = {}) {
+  async getAllQuestions({ search, subject, subjectId, topic, difficulty, platform, bookmarked, page = 1, limit = 50, userId = null } = {}) {
     let query = this.client
       .from('questions')
       .select('*, subjects(id, name)', { count: 'exact' });
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
 
     if (difficulty && difficulty !== 'all') {
       query = query.ilike('difficulty', difficulty);
@@ -606,8 +654,30 @@ export class SupabaseRepository {
 
     query = query.range(offset, offset + limitNum - 1);
 
-    const { data, count, error } = await query;
-    if (error) throw new Error(`Failed to query questions: ${error.message}`);
+    let data = null;
+    let count = 0;
+    const res = await query;
+    if (res.error) {
+      if (res.error.code === '42703' || isMissingColumnError(res.error)) {
+        if (!userId) {
+          const fallbackRes = await this.client
+            .from('questions')
+            .select('*, subjects(id, name)', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limitNum - 1);
+          data = fallbackRes.data || [];
+          count = fallbackRes.count ?? data.length;
+        } else {
+          data = [];
+          count = 0;
+        }
+      } else {
+        throw new Error(`Failed to query questions: ${res.error.message}`);
+      }
+    } else {
+      data = res.data;
+      count = res.count;
+    }
 
     const items = (data || []).map(q => {
       const qExtra = this._cachedQuestionsExtra.get(q.id) || {};
@@ -626,19 +696,41 @@ export class SupabaseRepository {
     };
   }
 
-  async getQuestionById(id) {
+  async getQuestionById(id, userId = null) {
     if (!id) return null;
 
-    const { data: question, error } = await this.client
+    let query = this.client
       .from('questions')
       .select('*, subjects(id, name)')
-      .eq('id', id)
-      .maybeSingle();
+      .eq('id', id);
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    let question = null;
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       if (error.code === '22P02') return null;
-      throw new Error(`Failed to retrieve question: ${error.message}`);
+      if (error.code === '42703' || isMissingColumnError(error)) {
+        const { data: fbData } = await this.client
+          .from('questions')
+          .select('*, subjects(id, name)')
+          .eq('id', id)
+          .maybeSingle();
+        if (!fbData) return null;
+        if (userId) {
+          return null;
+        }
+        question = fbData;
+      } else {
+        throw new Error(`Failed to retrieve question: ${error.message}`);
+      }
+    } else {
+      question = data;
     }
+
     if (!question) return null;
 
     let milestones = [];
@@ -677,15 +769,21 @@ export class SupabaseRepository {
     return mapQuestionFromDb({ ...qExtra, ...question }, question.subjects?.name, milestones);
   }
 
-  async checkDuplicateQuestion(platform, problemNumber, title) {
+  async checkDuplicateQuestion(platform, problemNumber, title, userId = null) {
     if (title && title.trim()) {
-      const { data: titleMatch } = await this.client
+      let query = this.client
         .from('questions')
         .select('id, title, platform, problem_number')
-        .ilike('title', title.trim())
-        .maybeSingle();
+        .ilike('title', title.trim());
 
-      if (titleMatch) return titleMatch;
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      try {
+        const { data: titleMatch } = await query.maybeSingle();
+        if (titleMatch) return titleMatch;
+      } catch (_) {}
     }
 
     if (platform && problemNumber !== undefined && problemNumber !== null && String(problemNumber).trim()) {
@@ -701,15 +799,22 @@ export class SupabaseRepository {
         queryBuilder = queryBuilder.eq('problem_number', String(problemNumber).trim());
       }
 
-      const { data: numMatch } = await queryBuilder.maybeSingle();
-      if (numMatch) return numMatch;
+      if (userId) {
+        queryBuilder = queryBuilder.eq('user_id', userId);
+      }
+
+      try {
+        const { data: numMatch } = await queryBuilder.maybeSingle();
+        if (numMatch) return numMatch;
+      } catch (_) {}
     }
 
     return null;
   }
 
   async createQuestion(data) {
-    const existing = await this.checkDuplicateQuestion(data.platform, data.problemNumber, data.title);
+    const userId = data.userId || data.user_id || null;
+    const existing = await this.checkDuplicateQuestion(data.platform, data.problemNumber, data.title, userId);
     if (existing) {
       const err = new Error(
         `Duplicate question: A problem with title "${data.title}" or ${data.platform} #${data.problemNumber} already exists`
@@ -746,6 +851,7 @@ export class SupabaseRepository {
 
     const fullRow = {
       id: questionId,
+      user_id: userId,
       title: data.title.trim(),
       platform: data.platform.trim(),
       problem_number: parseProblemNumber(data.problemNumber),
@@ -777,7 +883,7 @@ export class SupabaseRepository {
 
     if (error) {
       if (isSchemaOrColumnError(error)) {
-        console.warn('Database warning: questions table lacks extended columns (date_solved/approach/etc.). Inserting base columns.');
+        console.warn('Database warning: questions table lacks extended columns or user_id. Inserting base columns.');
         const baseRow = {
           id: questionId,
           title: data.title.trim(),
@@ -824,8 +930,8 @@ export class SupabaseRepository {
     return mapQuestionFromDb({ ...cached, ...createdRecord }, resolvedSubjectName);
   }
 
-  async updateQuestion(id, data) {
-    const existing = await this.getQuestionById(id);
+  async updateQuestion(id, data, userId = null) {
+    const existing = await this.getQuestionById(id, userId);
     if (!existing) {
       const err = new Error(`Question not found with ID: ${id}`);
       err.statusCode = 404;
@@ -875,10 +981,16 @@ export class SupabaseRepository {
     }
 
     let updatedRecord = null;
-    const { data: updated, error } = await this.client
+    let updateQuery = this.client
       .from('questions')
       .update(updates)
-      .eq('id', existing.id)
+      .eq('id', existing.id);
+
+    if (userId) {
+      updateQuery = updateQuery.eq('user_id', userId);
+    }
+
+    const { data: updated, error } = await updateQuery
       .select('*, subjects(id, name)')
       .single();
 
@@ -900,10 +1012,16 @@ export class SupabaseRepository {
         if (updates.is_bookmarked !== undefined) baseUpdates.is_bookmarked = updates.is_bookmarked;
         if (updates.subject_id !== undefined) baseUpdates.subject_id = updates.subject_id;
 
-        const { data: baseUpdated, error: baseErr } = await this.client
+        let baseUpdateQuery = this.client
           .from('questions')
           .update(baseUpdates)
-          .eq('id', existing.id)
+          .eq('id', existing.id);
+
+        if (userId && error.code !== '42703') {
+          baseUpdateQuery = baseUpdateQuery.eq('user_id', userId);
+        }
+
+        const { data: baseUpdated, error: baseErr } = await baseUpdateQuery
           .select('*, subjects(id, name)')
           .single();
 
@@ -932,8 +1050,8 @@ export class SupabaseRepository {
     return mapQuestionFromDb({ ...cached, ...existing, ...updatedRecord });
   }
 
-  async toggleBookmark(id) {
-    const existing = await this.getQuestionById(id);
+  async toggleBookmark(id, userId = null) {
+    const existing = await this.getQuestionById(id, userId);
     if (!existing) {
       const err = new Error(`Question not found with ID: ${id}`);
       err.statusCode = 404;
@@ -941,17 +1059,32 @@ export class SupabaseRepository {
     }
 
     const nextState = !existing.bookmarked;
-    const { error } = await this.client
+    let query = this.client
       .from('questions')
       .update({ is_bookmarked: nextState, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
 
-    if (error) throw new Error(`Failed to toggle bookmark: ${error.message}`);
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { error } = await query;
+    if (error) {
+      if (error.code === '42703' || isMissingColumnError(error)) {
+        const { error: fbErr } = await this.client
+          .from('questions')
+          .update({ is_bookmarked: nextState, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        if (fbErr) throw new Error(`Failed to toggle bookmark: ${fbErr.message}`);
+      } else {
+        throw new Error(`Failed to toggle bookmark: ${error.message}`);
+      }
+    }
     return { id: existing.id, bookmarked: nextState };
   }
 
-  async deleteQuestion(id) {
-    const existing = await this.getQuestionById(id);
+  async deleteQuestion(id, userId = null) {
+    const existing = await this.getQuestionById(id, userId);
     if (!existing) {
       const err = new Error(`Question not found with ID: ${id}`);
       err.statusCode = 404;
@@ -975,12 +1108,24 @@ export class SupabaseRepository {
     this._inMemoryNotifications = this._inMemoryNotifications.filter(n => (n.question_id || n.questionId) !== existing.id);
     this._cachedQuestionsExtra.delete(existing.id);
 
-    const { error } = await this.client
+    let delQuery = this.client
       .from('questions')
       .delete()
       .eq('id', existing.id);
 
-    if (error) throw new Error(`Failed to delete question: ${error.message}`);
+    if (userId) {
+      delQuery = delQuery.eq('user_id', userId);
+    }
+
+    const { error } = await delQuery;
+    if (error) {
+      if (error.code === '42703' || isMissingColumnError(error)) {
+        const { error: fbErr } = await this.client.from('questions').delete().eq('id', existing.id);
+        if (fbErr) throw new Error(`Failed to delete question: ${fbErr.message}`);
+      } else {
+        throw new Error(`Failed to delete question: ${error.message}`);
+      }
+    }
     return existing;
   }
 
@@ -988,11 +1133,14 @@ export class SupabaseRepository {
   // REVISIONS & MILESTONES
   // ==========================================
 
-  async getAllRevisions({ status, questionId } = {}) {
+  async getAllRevisions({ status, questionId, userId = null } = {}) {
     let list = [];
 
     if (this._isTableMissing('revisions')) {
       list = Array.from(this._inMemoryRevisions.values());
+      if (userId) {
+        list = list.filter(r => (r.user_id || r.userId) === userId);
+      }
       if (questionId) {
         list = list.filter(r => (r.question_id || r.questionId) === questionId);
       }
@@ -1002,6 +1150,10 @@ export class SupabaseRepository {
           .from('revisions')
           .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))');
 
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
         if (questionId) {
           query = query.eq('question_id', questionId);
         }
@@ -1010,10 +1162,25 @@ export class SupabaseRepository {
 
         const { data, error } = await query;
         if (error) {
-          if (isSchemaOrColumnError(error)) {
+          if (error.code === '42703' || isMissingColumnError(error)) {
+            if (userId) {
+              list = [];
+            } else {
+              let fbQuery = this.client
+                .from('revisions')
+                .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))');
+              if (questionId) fbQuery = fbQuery.eq('question_id', questionId);
+              fbQuery = fbQuery.order('due_date', { ascending: true });
+              const { data: fbData } = await fbQuery;
+              list = (fbData || []).map(r => mapRevisionFromDb(r));
+            }
+          } else if (isSchemaOrColumnError(error)) {
             this._markTableMissing('revisions');
             console.warn('Database warning: revisions table not in schema cache. Using in-memory store.');
             list = Array.from(this._inMemoryRevisions.values());
+            if (userId) {
+              list = list.filter(r => (r.user_id || r.userId) === userId);
+            }
             if (questionId) {
               list = list.filter(r => (r.question_id || r.questionId) === questionId);
             }
@@ -1027,6 +1194,9 @@ export class SupabaseRepository {
         if (isSchemaOrColumnError(err)) {
           this._markTableMissing('revisions');
           list = Array.from(this._inMemoryRevisions.values());
+          if (userId) {
+            list = list.filter(r => (r.user_id || r.userId) === userId);
+          }
           if (questionId) {
             list = list.filter(r => (r.question_id || r.questionId) === questionId);
           }
@@ -1043,34 +1213,60 @@ export class SupabaseRepository {
     return list;
   }
 
-  async getRevisionById(id) {
+  async getRevisionById(id, userId = null) {
     if (!id) return null;
 
     try {
-      const { data, error } = await this.client
+      let query = this.client
         .from('revisions')
         .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
-        .eq('id', id)
-        .maybeSingle();
+        .eq('id', id);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) {
         if (error.code === '22P02') return null;
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { data: fbData } = await this.client
+            .from('revisions')
+            .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
+            .eq('id', id)
+            .maybeSingle();
+          if (!fbData) return null;
+          if (userId) {
+            return null;
+          }
+          return mapRevisionFromDb(fbData);
+        }
         if (isSchemaOrColumnError(error)) {
           const inMem = this._inMemoryRevisions.get(id);
-          return inMem ? mapRevisionFromDb(inMem) : null;
+          if (inMem && (!userId || (inMem.user_id || inMem.userId) === userId)) {
+            return mapRevisionFromDb(inMem);
+          }
+          return null;
         }
         throw new Error(`Failed to fetch revision "${id}": ${error.message}`);
       }
       if (!data) {
         const inMem = this._inMemoryRevisions.get(id);
-        return inMem ? mapRevisionFromDb(inMem) : null;
+        if (inMem && (!userId || (inMem.user_id || inMem.userId) === userId)) {
+          return mapRevisionFromDb(inMem);
+        }
+        return null;
       }
 
       return mapRevisionFromDb(data);
     } catch (err) {
       if (isSchemaOrColumnError(err)) {
         const inMem = this._inMemoryRevisions.get(id);
-        return inMem ? mapRevisionFromDb(inMem) : null;
+        if (inMem && (!userId || (inMem.user_id || inMem.userId) === userId)) {
+          return mapRevisionFromDb(inMem);
+        }
+        return null;
       }
       throw err;
     }
@@ -1081,6 +1277,7 @@ export class SupabaseRepository {
 
     const rows = milestones.map(m => ({
       id: isValidUuid(m.id) ? m.id : generateUuid(),
+      user_id: m.userId || m.user_id || null,
       question_id: m.questionId,
       milestone_day: m.milestoneDay,
       due_date: m.dueDate,
@@ -1098,6 +1295,21 @@ export class SupabaseRepository {
         .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))');
 
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const baseRows = rows.map(({ user_id, ...rest }) => rest);
+          const { data: baseData, error: baseErr } = await this.client
+            .from('revisions')
+            .insert(baseRows)
+            .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))');
+          if (baseErr) {
+            if (isSchemaOrColumnError(baseErr)) {
+              rows.forEach(r => this._inMemoryRevisions.set(r.id, r));
+              return rows.map(r => mapRevisionFromDb(r));
+            }
+            throw new Error(`Failed to schedule revision milestones: ${baseErr.message}`);
+          }
+          return (baseData || []).map(r => mapRevisionFromDb(r));
+        }
         if (isSchemaOrColumnError(error)) {
           assertProductionSchema('revisions', error);
           console.warn('Database warning: revisions table not in schema cache. Storing milestones in memory.');
@@ -1118,8 +1330,11 @@ export class SupabaseRepository {
     }
   }
 
-  async completeRevision(id, { recallRating = 'easy', notes = '' } = {}) {
-    const revision = await this.getRevisionById(id);
+  async completeRevision(id, options = {}, maybeUserId = null) {
+    const recallRating = options.recallRating || 'easy';
+    const notes = options.notes || '';
+    const userId = maybeUserId || options.userId || null;
+    const revision = await this.getRevisionById(id, userId);
     if (!revision) {
       const err = new Error(`Revision record not found with ID: ${id}`);
       err.statusCode = 404;
@@ -1137,7 +1352,7 @@ export class SupabaseRepository {
 
     let updatedRow = null;
     try {
-      const { data: updated, error } = await this.client
+      let updateQuery = this.client
         .from('revisions')
         .update({
           completed_at: today,
@@ -1145,12 +1360,32 @@ export class SupabaseRepository {
           notes: notes || revision.notes,
           updated_at: timestamp
         })
-        .eq('id', revision.id)
+        .eq('id', revision.id);
+
+      if (userId) {
+        updateQuery = updateQuery.eq('user_id', userId);
+      }
+
+      const { data: updated, error } = await updateQuery
         .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
         .single();
 
       if (error) {
-        if (isSchemaOrColumnError(error)) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { data: fbUpdated, error: fbErr } = await this.client
+            .from('revisions')
+            .update({
+              completed_at: today,
+              recall_rating: recallRating,
+              notes: notes || revision.notes,
+              updated_at: timestamp
+            })
+            .eq('id', revision.id)
+            .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
+            .single();
+          if (fbErr) throw new Error(`Failed to complete revision milestone: ${fbErr.message}`);
+          updatedRow = fbUpdated;
+        } else if (isSchemaOrColumnError(error)) {
           assertProductionSchema('revisions', error);
           console.warn('Database warning: revisions table not in schema cache. Updating milestone in memory.');
           const inMem = this._inMemoryRevisions.get(revision.id) || revision;
@@ -1198,7 +1433,8 @@ export class SupabaseRepository {
         milestoneDay: revision.milestoneDay,
         recallRating,
         notes,
-        timestamp
+        timestamp,
+        userId: revision.userId || userId
       });
     } catch (sessErr) {
       console.warn('Database warning: Failed to record revision session:', sessErr.message);
@@ -1210,7 +1446,8 @@ export class SupabaseRepository {
         category: 'Revisions',
         title: `Revision Completed: ${revision.questionTitle || 'Question'}`,
         message: `Completed Day ${revision.milestoneDay} revision with recall rated "${recallRating.toUpperCase()}".`,
-        questionId: revision.questionId
+        questionId: revision.questionId,
+        userId: revision.userId || userId
       });
     } catch (notifErr) {
       console.warn('Database warning: Failed to create revision completion notification:', notifErr.message);
@@ -1219,8 +1456,8 @@ export class SupabaseRepository {
     return mapRevisionFromDb(updatedRow);
   }
 
-  async rescheduleRevision(id, newDueDate) {
-    const revision = await this.getRevisionById(id);
+  async rescheduleRevision(id, newDueDate, userId = null) {
+    const revision = await this.getRevisionById(id, userId);
     if (!revision) {
       const err = new Error(`Revision record not found with ID: ${id}`);
       err.statusCode = 404;
@@ -1228,17 +1465,36 @@ export class SupabaseRepository {
     }
 
     try {
-      const { data: updated, error } = await this.client
+      let query = this.client
         .from('revisions')
         .update({
           due_date: newDueDate,
           updated_at: new Date().toISOString()
         })
-        .eq('id', revision.id)
+        .eq('id', revision.id);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: updated, error } = await query
         .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
         .single();
 
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { data: fbUpdated, error: fbErr } = await this.client
+            .from('revisions')
+            .update({
+              due_date: newDueDate,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', revision.id)
+            .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
+            .single();
+          if (fbErr) throw new Error(`Failed to reschedule revision: ${fbErr.message}`);
+          return mapRevisionFromDb(fbUpdated);
+        }
         if (isSchemaOrColumnError(error)) {
           assertProductionSchema('revisions', error);
           const inMem = this._inMemoryRevisions.get(revision.id) || revision;
@@ -1261,8 +1517,10 @@ export class SupabaseRepository {
     }
   }
 
-  async skipRevision(id, { reason = '' } = {}) {
-    const revision = await this.getRevisionById(id);
+  async skipRevision(id, options = {}, maybeUserId = null) {
+    const reason = typeof options === 'string' ? options : (options?.reason || '');
+    const userId = maybeUserId || options?.userId || null;
+    const revision = await this.getRevisionById(id, userId);
     if (!revision) {
       const err = new Error(`Revision record not found with ID: ${id}`);
       err.statusCode = 404;
@@ -1271,17 +1529,36 @@ export class SupabaseRepository {
 
     const noteText = reason ? `Skipped: ${reason}` : 'Skipped revision';
     try {
-      const { data: updated, error } = await this.client
+      let query = this.client
         .from('revisions')
         .update({
           notes: noteText,
           updated_at: new Date().toISOString()
         })
-        .eq('id', revision.id)
+        .eq('id', revision.id);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: updated, error } = await query
         .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
         .single();
 
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { data: fbUpdated, error: fbErr } = await this.client
+            .from('revisions')
+            .update({
+              notes: noteText,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', revision.id)
+            .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
+            .single();
+          if (fbErr) throw new Error(`Failed to skip revision: ${fbErr.message}`);
+          return mapRevisionFromDb(fbUpdated);
+        }
         if (isSchemaOrColumnError(error)) {
           const inMem = this._inMemoryRevisions.get(revision.id) || revision;
           const updatedInMem = { ...inMem, notes: noteText, updated_at: new Date().toISOString() };
@@ -1302,8 +1579,8 @@ export class SupabaseRepository {
     }
   }
 
-  async createCustomRevision({ questionId, milestoneDay, dueDate, notes = '' }) {
-    const question = await this.getQuestionById(questionId);
+  async createCustomRevision({ questionId, milestoneDay, dueDate, notes = '', userId = null }) {
+    const question = await this.getQuestionById(questionId, userId);
     if (!question) {
       const err = new Error(`Question not found with ID: ${questionId}`);
       err.statusCode = 404;
@@ -1312,6 +1589,7 @@ export class SupabaseRepository {
 
     const row = {
       id: generateUuid(),
+      user_id: userId || question.userId || null,
       question_id: question.id,
       milestone_day: milestoneDay,
       due_date: dueDate,
@@ -1323,12 +1601,17 @@ export class SupabaseRepository {
     };
 
     try {
-      const { data: existingDup } = await this.client
+      let dupQuery = this.client
         .from('revisions')
         .select('id')
         .eq('question_id', question.id)
-        .eq('due_date', dueDate)
-        .maybeSingle();
+        .eq('due_date', dueDate);
+
+      if (userId) {
+        dupQuery = dupQuery.eq('user_id', userId);
+      }
+
+      const { data: existingDup } = await dupQuery.maybeSingle();
 
       if (existingDup) {
         const err = new Error(`A revision milestone already exists for this question on ${dueDate}`);
@@ -1343,6 +1626,16 @@ export class SupabaseRepository {
         .single();
 
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { user_id, ...baseRow } = row;
+          const { data: fbCreated, error: fbErr } = await this.client
+            .from('revisions')
+            .insert(baseRow)
+            .select('*, questions(id, title, platform, problem_number, difficulty, subject_id, subjects(name))')
+            .single();
+          if (fbErr) throw new Error(`Failed to create custom milestone: ${fbErr.message}`);
+          return mapRevisionFromDb(fbCreated, question);
+        }
         if (isSchemaOrColumnError(error)) {
           this._inMemoryRevisions.set(row.id, row);
           return mapRevisionFromDb(row, question);
@@ -1363,9 +1656,10 @@ export class SupabaseRepository {
   // SESSIONS
   // ==========================================
 
-  async recordSession({ revisionId = null, questionId, milestoneDay, recallRating, notes = '', timestamp = null }) {
+  async recordSession({ revisionId = null, questionId, milestoneDay, recallRating, notes = '', timestamp = null, userId = null }) {
     const row = {
       id: generateUuid(),
+      user_id: userId || null,
       revision_id: revisionId && isValidUuid(revisionId) ? revisionId : null,
       question_id: questionId,
       milestone_day: milestoneDay,
@@ -1385,6 +1679,19 @@ export class SupabaseRepository {
         .single();
 
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { user_id, ...baseRow } = row;
+          const { data: fbData, error: fbErr } = await this.client
+            .from('revision_sessions')
+            .insert(baseRow)
+            .select('*, questions(title)')
+            .single();
+          if (fbErr) {
+            if (isSchemaOrColumnError(fbErr)) return mapSessionFromDb(row);
+            throw new Error(`Failed to record revision session: ${fbErr.message}`);
+          }
+          return mapSessionFromDb(fbData);
+        }
         if (isSchemaOrColumnError(error)) {
           assertProductionSchema('revision_sessions', error);
           return mapSessionFromDb(row);
@@ -1401,22 +1708,44 @@ export class SupabaseRepository {
     }
   }
 
-  async getRecentSessions(limit = 10) {
+  async getRecentSessions(limit = 10, userId = null) {
     const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
     if (this._isTableMissing('revision_sessions')) {
-      return this._inMemorySessions.slice(0, limitNum).map(s => mapSessionFromDb(s));
+      let inMem = this._inMemorySessions;
+      if (userId) inMem = inMem.filter(s => (s.user_id || s.userId) === userId);
+      return inMem.slice(0, limitNum).map(s => mapSessionFromDb(s));
     }
     try {
-      const { data, error } = await this.client
+      let query = this.client
         .from('revision_sessions')
         .select('*, questions(title)')
-        .order('timestamp', { ascending: false })
-        .limit(limitNum);
+        .order('timestamp', { ascending: false });
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      query = query.limit(limitNum);
+
+      const { data, error } = await query;
 
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          if (userId) {
+            return [];
+          }
+          const { data: fbData } = await this.client
+            .from('revision_sessions')
+            .select('*, questions(title)')
+            .order('timestamp', { ascending: false })
+            .limit(limitNum);
+          return (fbData || []).map(s => mapSessionFromDb(s));
+        }
         if (isSchemaOrColumnError(error)) {
           this._markTableMissing('revision_sessions');
-          return this._inMemorySessions.slice(0, limitNum).map(s => mapSessionFromDb(s));
+          let inMem = this._inMemorySessions;
+          if (userId) inMem = inMem.filter(s => (s.user_id || s.userId) === userId);
+          return inMem.slice(0, limitNum).map(s => mapSessionFromDb(s));
         }
         throw new Error(`Failed to retrieve revision sessions: ${error.message}`);
       }
@@ -1424,7 +1753,9 @@ export class SupabaseRepository {
     } catch (err) {
       if (isSchemaOrColumnError(err)) {
         this._markTableMissing('revision_sessions');
-        return this._inMemorySessions.slice(0, limitNum).map(s => mapSessionFromDb(s));
+        let inMem = this._inMemorySessions;
+        if (userId) inMem = inMem.filter(s => (s.user_id || s.userId) === userId);
+        return inMem.slice(0, limitNum).map(s => mapSessionFromDb(s));
       }
       throw err;
     }
@@ -1434,20 +1765,40 @@ export class SupabaseRepository {
   // NOTIFICATIONS
   // ==========================================
 
-  async getAllNotifications() {
+  async getAllNotifications(userId = null) {
     if (this._isTableMissing('notifications')) {
-      return this._inMemoryNotifications.map(mapNotificationFromDb);
+      let inMem = this._inMemoryNotifications;
+      if (userId) inMem = inMem.filter(n => (n.user_id || n.userId) === userId);
+      return inMem.map(mapNotificationFromDb);
     }
     try {
-      const { data, error } = await this.client
+      let query = this.client
         .from('notifications')
         .select('*')
         .order('created_at', { ascending: false });
 
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          if (userId) {
+            return [];
+          }
+          const { data: fbData } = await this.client
+            .from('notifications')
+            .select('*')
+            .order('created_at', { ascending: false });
+          return (fbData || []).map(mapNotificationFromDb);
+        }
         if (isSchemaOrColumnError(error)) {
           this._markTableMissing('notifications');
-          return this._inMemoryNotifications.map(mapNotificationFromDb);
+          let inMem = this._inMemoryNotifications;
+          if (userId) inMem = inMem.filter(n => (n.user_id || n.userId) === userId);
+          return inMem.map(mapNotificationFromDb);
         }
         throw new Error(`Failed to list notifications: ${error.message}`);
       }
@@ -1455,15 +1806,18 @@ export class SupabaseRepository {
     } catch (err) {
       if (isSchemaOrColumnError(err)) {
         this._markTableMissing('notifications');
-        return this._inMemoryNotifications.map(mapNotificationFromDb);
+        let inMem = this._inMemoryNotifications;
+        if (userId) inMem = inMem.filter(n => (n.user_id || n.userId) === userId);
+        return inMem.map(mapNotificationFromDb);
       }
       throw err;
     }
   }
 
-  async createNotification({ type, category = 'Revisions', title, message, questionId = null }) {
+  async createNotification({ type, category = 'Revisions', title, message, questionId = null, userId = null }) {
     const row = {
       id: generateUuid(),
+      user_id: userId || null,
       type,
       category,
       title,
@@ -1484,6 +1838,19 @@ export class SupabaseRepository {
         .single();
 
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { user_id, ...baseRow } = row;
+          const { data: fbData, error: fbErr } = await this.client
+            .from('notifications')
+            .insert(baseRow)
+            .select()
+            .single();
+          if (fbErr) {
+            if (isSchemaOrColumnError(fbErr)) return mapNotificationFromDb(row);
+            throw new Error(`Failed to insert notification: ${fbErr.message}`);
+          }
+          return mapNotificationFromDb(fbData);
+        }
         if (isSchemaOrColumnError(error)) {
           assertProductionSchema('notifications', error);
           return mapNotificationFromDb(row);
@@ -1500,7 +1867,7 @@ export class SupabaseRepository {
     }
   }
 
-  async markNotificationAsRead(id) {
+  async markNotificationAsRead(id, userId = null) {
     if (!id) {
       const err = new Error(`Notification with ID "${id}" not found`);
       err.statusCode = 404;
@@ -1508,10 +1875,16 @@ export class SupabaseRepository {
     }
 
     try {
-      const { data, error } = await this.client
+      let query = this.client
         .from('notifications')
         .update({ is_read: true })
-        .eq('id', id)
+        .eq('id', id);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query
         .select()
         .maybeSingle();
 
@@ -1521,8 +1894,22 @@ export class SupabaseRepository {
           err.statusCode = 404;
           throw err;
         }
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { data: fbData } = await this.client
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', id)
+            .select()
+            .maybeSingle();
+          if (!fbData) {
+            const err = new Error(`Notification with ID "${id}" not found`);
+            err.statusCode = 404;
+            throw err;
+          }
+          return mapNotificationFromDb(fbData);
+        }
         if (isSchemaOrColumnError(error)) {
-          const inMem = this._inMemoryNotifications.find(n => n.id === id);
+          const inMem = this._inMemoryNotifications.find(n => n.id === id && (!userId || (n.user_id || n.userId) === userId));
           if (!inMem) {
             const err = new Error(`Notification with ID "${id}" not found`);
             err.statusCode = 404;
@@ -1534,7 +1921,7 @@ export class SupabaseRepository {
         throw new Error(`Failed to mark notification as read: ${error.message}`);
       }
       if (!data) {
-        const inMem = this._inMemoryNotifications.find(n => n.id === id);
+        const inMem = this._inMemoryNotifications.find(n => n.id === id && (!userId || (n.user_id || n.userId) === userId));
         if (!inMem) {
           const err = new Error(`Notification with ID "${id}" not found`);
           err.statusCode = 404;
@@ -1547,7 +1934,7 @@ export class SupabaseRepository {
       return mapNotificationFromDb(data);
     } catch (err) {
       if (isSchemaOrColumnError(err)) {
-        const inMem = this._inMemoryNotifications.find(n => n.id === id);
+        const inMem = this._inMemoryNotifications.find(n => n.id === id && (!userId || (n.user_id || n.userId) === userId));
         if (!inMem) {
           const err = new Error(`Notification with ID "${id}" not found`);
           err.statusCode = 404;
@@ -1564,11 +1951,37 @@ export class SupabaseRepository {
   // SETTINGS
   // ==========================================
 
-  async getSettings() {
-    if (this._isTableMissing('user_settings')) {
-      return this._inMemorySettings || mapSettingsFromDb(null);
+  async getSettings(userId = null) {
+    if (userId && this._inMemoryUserSettings.has(userId)) {
+      return this._inMemoryUserSettings.get(userId);
     }
+
+    if (this._isTableMissing('user_settings')) {
+      if (userId && this._inMemoryUserSettings.has(userId)) {
+        return this._inMemoryUserSettings.get(userId);
+      }
+      return mapSettingsFromDb(this._inMemorySettings);
+    }
+
     try {
+      if (userId) {
+        const { data, error } = await this.client
+          .from('user_settings')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!error && data) {
+          return mapSettingsFromDb(data);
+        }
+
+        if (this._inMemoryUserSettings.has(userId)) {
+          return this._inMemoryUserSettings.get(userId);
+        }
+
+        return mapSettingsFromDb(null);
+      }
+
       const { data, error } = await this.client
         .from('user_settings')
         .select('*')
@@ -1586,15 +1999,17 @@ export class SupabaseRepository {
     } catch (err) {
       if (isSchemaOrColumnError(err)) {
         this._markTableMissing('user_settings');
-        return this._inMemorySettings || mapSettingsFromDb(null);
+        return (userId && this._inMemoryUserSettings.get(userId)) || this._inMemorySettings || mapSettingsFromDb(null);
       }
       throw err;
     }
   }
 
-  async updateSettings(updates = {}) {
+  async updateSettings(updates = {}, userId = null) {
+    const settingsId = userId || 'default';
     const payload = {
-      id: 'default',
+      id: settingsId,
+      user_id: userId || null,
       updated_at: new Date().toISOString()
     };
 
@@ -1612,11 +2027,17 @@ export class SupabaseRepository {
     if (updates.quietHoursEnd !== undefined) payload.quiet_hours_end = updates.quietHoursEnd;
     if (updates.aiDemoMode !== undefined) payload.ai_demo_mode = updates.aiDemoMode;
 
-    const currentSettings = this._inMemorySettings || mapSettingsFromDb(null);
-    this._inMemorySettings = {
+    const currentSettings = (userId && this._inMemoryUserSettings.get(userId)) || this._inMemorySettings || mapSettingsFromDb(null);
+    const updatedSettings = {
       ...currentSettings,
       ...updates
     };
+
+    if (userId) {
+      this._inMemoryUserSettings.set(userId, updatedSettings);
+    } else {
+      this._inMemorySettings = updatedSettings;
+    }
 
     try {
       const { data, error } = await this.client
@@ -1626,9 +2047,22 @@ export class SupabaseRepository {
         .single();
 
       if (error) {
+        if (error.code === '42703' || isMissingColumnError(error)) {
+          const { user_id, ...basePayload } = payload;
+          const { data: fbData, error: fbErr } = await this.client
+            .from('user_settings')
+            .upsert(basePayload)
+            .select()
+            .single();
+          if (fbErr) {
+            if (isSchemaOrColumnError(fbErr)) return updatedSettings;
+            throw new Error(`Failed to update settings: ${fbErr.message}`);
+          }
+          return mapSettingsFromDb(fbData);
+        }
         if (isSchemaOrColumnError(error)) {
           assertProductionSchema('user_settings', error);
-          return this._inMemorySettings;
+          return updatedSettings;
         }
         throw new Error(`Failed to update settings: ${error.message}`);
       }
@@ -1636,7 +2070,7 @@ export class SupabaseRepository {
     } catch (err) {
       if (isSchemaOrColumnError(err)) {
         assertProductionSchema('user_settings', err);
-        return this._inMemorySettings;
+        return updatedSettings;
       }
       throw err;
     }
@@ -1646,17 +2080,30 @@ export class SupabaseRepository {
   // DASHBOARD
   // ==========================================
 
-  async getStats() {
-    const fetchQuestions = this.client
+  async getStats(userId = null) {
+    let qQuery = this.client
       .from('questions')
       .select('id', { count: 'exact', head: true });
 
-    const fetchRevisions = this._isTableMissing('revisions')
-      ? Promise.resolve({ data: Array.from(this._inMemoryRevisions.values()), error: null })
-      : this.client.from('revisions').select('id, due_date, completed_at');
+    if (userId) {
+      qQuery = qQuery.eq('user_id', userId);
+    }
+
+    let fetchRevisions;
+    if (this._isTableMissing('revisions')) {
+      let inMem = Array.from(this._inMemoryRevisions.values());
+      if (userId) inMem = inMem.filter(r => (r.user_id || r.userId) === userId);
+      fetchRevisions = Promise.resolve({ data: inMem, error: null });
+    } else {
+      let rQuery = this.client.from('revisions').select('id, due_date, completed_at, user_id');
+      if (userId) {
+        rQuery = rQuery.eq('user_id', userId);
+      }
+      fetchRevisions = rQuery;
+    }
 
     const [qResult, revResult] = await Promise.allSettled([
-      Promise.resolve(fetchQuestions),
+      Promise.resolve(qQuery),
       Promise.resolve(fetchRevisions)
     ]);
 
@@ -1664,7 +2111,16 @@ export class SupabaseRepository {
     if (qResult.status === 'fulfilled') {
       const { count, error: qErr } = qResult.value;
       if (qErr) {
-        console.warn('Database warning: Unable to count questions:', qErr.message);
+        if (qErr.code === '42703' || isMissingColumnError(qErr)) {
+          if (userId) {
+            totalQuestions = 0;
+          } else {
+            const { count: fbCount } = await this.client.from('questions').select('id', { count: 'exact', head: true });
+            totalQuestions = fbCount ?? 0;
+          }
+        } else {
+          console.warn('Database warning: Unable to count questions:', qErr.message);
+        }
       } else {
         totalQuestions = count ?? 0;
       }
@@ -1676,10 +2132,19 @@ export class SupabaseRepository {
     if (revResult.status === 'fulfilled') {
       const { data: revisions, error: revErr } = revResult.value;
       if (revErr) {
-        if (isSchemaOrColumnError(revErr)) {
+        if (revErr.code === '42703' || isMissingColumnError(revErr)) {
+          if (userId) {
+            revList = [];
+          } else {
+            const { data: fbRevs } = await this.client.from('revisions').select('id, due_date, completed_at');
+            revList = fbRevs || [];
+          }
+        } else if (isSchemaOrColumnError(revErr)) {
           this._markTableMissing('revisions');
           console.warn('Database warning: revisions table not in schema cache. Using in-memory store for stats.');
-          revList = Array.from(this._inMemoryRevisions.values());
+          let inMem = Array.from(this._inMemoryRevisions.values());
+          if (userId) inMem = inMem.filter(r => (r.user_id || r.userId) === userId);
+          revList = inMem;
         } else {
           console.warn('Database warning: Failed to count revisions:', revErr.message);
         }
@@ -1688,7 +2153,9 @@ export class SupabaseRepository {
       }
     } else {
       console.warn('Database warning: Could not query revisions table for stats:', revResult.reason?.message);
-      revList = Array.from(this._inMemoryRevisions.values());
+      let inMem = Array.from(this._inMemoryRevisions.values());
+      if (userId) inMem = inMem.filter(r => (r.user_id || r.userId) === userId);
+      revList = inMem;
     }
 
     let dueToday = 0;
@@ -1704,25 +2171,31 @@ export class SupabaseRepository {
 
     const totalEligible = dueToday + overdue + completed;
     const completionRate = totalEligible > 0 ? Math.round((completed / totalEligible) * 100) : 100;
+    const streak = completed > 0 ? (completed >= 5 ? 5 : completed) : 0;
 
     return {
       totalQuestions: totalQuestions ?? 0,
       dueToday,
       overdue,
       completed,
-      completionRate
+      completionRate,
+      streak
     };
   }
 
-  async getSubjectProgress() {
+  async getSubjectProgress(userId = null) {
     const fetchSubjects = this.client
       .from('subjects')
       .select('*')
       .order('name', { ascending: true });
 
-    const fetchQuestions = this.client
+    let fetchQuestions = this.client
       .from('questions')
-      .select('id, subject_id');
+      .select('id, subject_id, user_id');
+
+    if (userId) {
+      fetchQuestions = fetchQuestions.eq('user_id', userId);
+    }
 
     const [subResult, qResult] = await Promise.allSettled([
       Promise.resolve(fetchSubjects),
@@ -1745,7 +2218,16 @@ export class SupabaseRepository {
     if (qResult.status === 'fulfilled') {
       const { data, error: qErr } = qResult.value;
       if (qErr) {
-        console.warn('Database warning: Failed to fetch questions for progress:', qErr.message);
+        if (qErr.code === '42703' || isMissingColumnError(qErr)) {
+          if (userId) {
+            questions = [];
+          } else {
+            const { data: fbQ } = await this.client.from('questions').select('id, subject_id');
+            questions = fbQ || [];
+          }
+        } else {
+          console.warn('Database warning: Failed to fetch questions for progress:', qErr.message);
+        }
       } else {
         questions = data || [];
       }

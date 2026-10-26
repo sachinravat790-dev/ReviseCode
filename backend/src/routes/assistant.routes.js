@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { assistantController } from '../controllers/assistant.controller.js';
+import { optionalAuthenticate } from '../middleware/auth.js';
 
 const router = Router();
+
+router.use(optionalAuthenticate);
 
 router.get('/capabilities', assistantController.getCapabilities);
 router.get('/status', assistantController.getStatus);

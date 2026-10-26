@@ -4,6 +4,7 @@
 
 import { api } from './api.js';
 import { StorageManager } from './storage.js';
+import { AuthService } from './auth.js';
 import { formatDate } from './app.js';
 import { showToast } from './navigation.js';
 
@@ -50,10 +51,10 @@ export function initProfile() {
 }
 
 async function renderProfile() {
-  const profile = StorageManager.getProfile();
+  const profile = AuthService.getCurrentUser() || StorageManager.getProfile();
   let totalQuestions = 0;
   let completedSessions = 0;
-  let streakDays = profile.streakDays || 5;
+  let streakDays = 0;
 
   try {
     const [statsRes, activityRes] = await Promise.all([
@@ -64,12 +65,12 @@ async function renderProfile() {
     const sessions = activityRes.data?.items || [];
     totalQuestions = stats.totalQuestions ?? 0;
     completedSessions = sessions.length;
-    streakDays = stats.completed > 0 ? stats.completed : (profile.streakDays || 5);
+    streakDays = stats.streak ?? 0;
   } catch (err) {
     const metrics = StorageManager.getDashboardMetrics();
     totalQuestions = metrics.totalQuestions;
     completedSessions = metrics.completedSessionsCount;
-    streakDays = metrics.streakDays;
+    streakDays = metrics.streakDays || 0;
   }
 
   const nameEl = document.getElementById('profileName');
@@ -83,11 +84,11 @@ async function renderProfile() {
   const statCompleted = document.getElementById('profileStatCompleted');
   const statStreak = document.getElementById('profileStatStreak');
 
-  if (nameEl) nameEl.textContent = profile.name || 'Sachin Kumar';
-  if (emailEl) emailEl.textContent = profile.email || 'sachin@example.com';
-  if (roleEl) roleEl.textContent = profile.role || 'Software Engineer';
-  if (dateEl) dateEl.textContent = formatDate(profile.dateJoined || '2026-09-15');
-  if (avatarEl) avatarEl.textContent = profile.avatar || 'SK';
+  if (nameEl) nameEl.textContent = profile.name || 'Learner';
+  if (emailEl) emailEl.textContent = profile.email || '';
+  if (roleEl) roleEl.textContent = profile.role || 'Learner';
+  if (dateEl) dateEl.textContent = profile.dateJoined ? formatDate(profile.dateJoined) : 'Recently';
+  if (avatarEl) avatarEl.textContent = profile.avatar || (profile.name ? profile.name[0].toUpperCase() : 'U');
 
   if (statSaved) statSaved.textContent = totalQuestions;
   if (statCompleted) statCompleted.textContent = completedSessions;

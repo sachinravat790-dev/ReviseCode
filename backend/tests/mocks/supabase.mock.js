@@ -26,6 +26,7 @@ export function createMockSupabaseClient() {
     questions: [
       {
         id: 'q_lc_50',
+        user_id: 'default-test-user-id',
         title: 'Pow(x, n)',
         platform: 'LeetCode',
         problem_number: '50',
@@ -49,6 +50,7 @@ export function createMockSupabaseClient() {
       },
       {
         id: 'q_lc_53',
+        user_id: 'default-test-user-id',
         title: 'Maximum Subarray',
         platform: 'LeetCode',
         problem_number: '53',
@@ -72,6 +74,7 @@ export function createMockSupabaseClient() {
       },
       {
         id: 'q_lc_121',
+        user_id: 'default-test-user-id',
         title: 'Best Time to Buy and Sell Stock',
         platform: 'LeetCode',
         problem_number: '121',
@@ -99,6 +102,7 @@ export function createMockSupabaseClient() {
     notifications: [
       {
         id: 'notif_1',
+        user_id: 'default-test-user-id',
         type: 'revision_due',
         category: 'Revisions',
         title: 'Revision Due Today: LeetCode 50',
@@ -109,6 +113,7 @@ export function createMockSupabaseClient() {
       },
       {
         id: 'notif_2',
+        user_id: 'default-test-user-id',
         type: 'overdue',
         category: 'Overdue',
         title: 'Overdue Revision: Maximum Subarray',
@@ -121,6 +126,7 @@ export function createMockSupabaseClient() {
     user_settings: [
       {
         id: 'default',
+        user_id: 'default-test-user-id',
         theme: 'dark',
         time_zone: 'Asia/Kolkata (UTC+05:30)',
         reminder_time: '09:00',
@@ -155,6 +161,7 @@ export function createMockSupabaseClient() {
         recallRating = 'easy';
         db.revision_sessions.push({
           id: `sess_${revIdCounter}`,
+          user_id: 'default-test-user-id',
           revision_id: `ms_${revIdCounter}`,
           question_id: q.id,
           milestone_day: dayOffset,
@@ -167,6 +174,7 @@ export function createMockSupabaseClient() {
       revIdCounter += 1;
       db.revisions.push({
         id: `ms_${revIdCounter}`,
+        user_id: 'default-test-user-id',
         question_id: q.id,
         milestone_day: dayOffset,
         due_date: dueDate,

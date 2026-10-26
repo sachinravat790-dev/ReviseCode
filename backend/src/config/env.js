@@ -7,8 +7,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const envPath = path.resolve(__dirname, '../../.env');
 
-// Load .env from backend root if present
+// Load .env from backend root if present, preserving pre-set environment variables like NODE_ENV=test
+const existingNodeEnv = process.env.NODE_ENV;
 dotenv.config({ path: envPath, override: true });
+if (existingNodeEnv) {
+  process.env.NODE_ENV = existingNodeEnv;
+}
 
 let lastEnvMtime = 0;
 let explicitOverride = false;

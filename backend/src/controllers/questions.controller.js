@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/api-response.js';
 export const questionsController = {
   async getAllQuestions(req, res, next) {
     try {
-      const data = await questionsService.getAllQuestions(req.query);
+      const data = await questionsService.getAllQuestions({ ...req.query, userId: req.user?.id });
       return successResponse(res, {
         statusCode: 200,
         message: 'Questions retrieved successfully',
@@ -17,7 +17,7 @@ export const questionsController = {
 
   async getQuestionById(req, res, next) {
     try {
-      const question = await questionsService.getQuestionById(req.params.id);
+      const question = await questionsService.getQuestionById(req.params.id, req.user?.id);
       if (!question) {
         return errorResponse(res, {
           statusCode: 404,
@@ -36,7 +36,7 @@ export const questionsController = {
 
   async createQuestion(req, res, next) {
     try {
-      const created = await questionsService.createQuestion(req.body);
+      const created = await questionsService.createQuestion({ ...req.body, userId: req.user?.id });
       return successResponse(res, {
         statusCode: 201,
         message: 'Question created successfully and revision milestones scheduled',
@@ -49,7 +49,7 @@ export const questionsController = {
 
   async updateQuestion(req, res, next) {
     try {
-      const updated = await questionsService.updateQuestion(req.params.id, req.body);
+      const updated = await questionsService.updateQuestion(req.params.id, req.body, req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Question updated successfully',
@@ -62,7 +62,7 @@ export const questionsController = {
 
   async toggleBookmark(req, res, next) {
     try {
-      const result = await questionsService.toggleBookmark(req.params.id);
+      const result = await questionsService.toggleBookmark(req.params.id, req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: result.bookmarked ? 'Question bookmarked' : 'Bookmark removed',
@@ -75,7 +75,7 @@ export const questionsController = {
 
   async deleteQuestion(req, res, next) {
     try {
-      const deleted = await questionsService.deleteQuestion(req.params.id);
+      const deleted = await questionsService.deleteQuestion(req.params.id, req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: `Question "${deleted.title}" and its associated milestones deleted successfully`,

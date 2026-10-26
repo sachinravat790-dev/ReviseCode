@@ -59,7 +59,7 @@ export const assistantController = {
   async executeCommand(req, res, next) {
     try {
       const { command, payload } = req.body;
-      const result = await assistantService.executeCommand(command, payload);
+      const result = await assistantService.executeCommand(command, payload, req.user?.id);
 
       if (!result.handled && result.clarificationNeeded) {
         return errorResponse(res, {
@@ -99,7 +99,7 @@ export const assistantController = {
         });
       }
 
-      const result = await assistantService.handleChatMessage(query, req.body);
+      const result = await assistantService.handleChatMessage(query, { ...req.body, userId: req.user?.id });
       return successResponse(res, {
         statusCode: 200,
         message: 'Assistant response generated',

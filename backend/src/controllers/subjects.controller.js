@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/api-response.js';
 export const subjectsController = {
   async getAllSubjects(req, res, next) {
     try {
-      const data = await subjectsService.getAllSubjects();
+      const data = await subjectsService.getAllSubjects(req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Subjects retrieved successfully',
@@ -17,7 +17,7 @@ export const subjectsController = {
 
   async getSubjectById(req, res, next) {
     try {
-      const subject = await subjectsService.getSubjectById(req.params.id);
+      const subject = await subjectsService.getSubjectById(req.params.id, req.user?.id);
       if (!subject) {
         return errorResponse(res, {
           statusCode: 404,

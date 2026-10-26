@@ -63,6 +63,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_subjects_name_unique_lower
 -- ====================================================================
 CREATE TABLE IF NOT EXISTS public.questions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   title text NOT NULL,
   platform text NOT NULL,
   problem_number integer,
@@ -87,6 +88,7 @@ CREATE TABLE IF NOT EXISTS public.questions (
 
 -- Backfill any missing columns on questions
 ALTER TABLE public.questions
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   ADD COLUMN IF NOT EXISTS problem_number integer,
   ADD COLUMN IF NOT EXISTS problem_url text DEFAULT '',
   ADD COLUMN IF NOT EXISTS subject_id uuid REFERENCES public.subjects(id) ON DELETE SET NULL,
@@ -106,12 +108,16 @@ ALTER TABLE public.questions
   ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now(),
   ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 
--- Unique constraint index on (platform, problem_number) where problem_number is present
-CREATE UNIQUE INDEX IF NOT EXISTS idx_questions_platform_problem_number_unique 
-  ON public.questions (lower(trim(platform)), problem_number) 
+-- Drop legacy global index if present
+DROP INDEX IF EXISTS public.idx_questions_platform_problem_number_unique;
+
+-- Unique constraint index partitioned by user_id
+CREATE UNIQUE INDEX IF NOT EXISTS idx_questions_user_platform_problem_number_unique 
+  ON public.questions (user_id, lower(trim(platform)), problem_number) 
   WHERE problem_number IS NOT NULL;
 
 -- Performance indexes for questions
+CREATE INDEX IF NOT EXISTS idx_questions_user_id ON public.questions (user_id);
 CREATE INDEX IF NOT EXISTS idx_questions_subject_id ON public.questions (subject_id);
 CREATE INDEX IF NOT EXISTS idx_questions_difficulty ON public.questions (difficulty);
 CREATE INDEX IF NOT EXISTS idx_questions_date_solved ON public.questions (date_solved DESC);
@@ -122,6 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_questions_is_bookmarked ON public.questions (is_b
 -- ====================================================================
 CREATE TABLE IF NOT EXISTS public.revisions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   question_id uuid NOT NULL REFERENCES public.questions(id) ON DELETE CASCADE,
   milestone_day integer NOT NULL,
   due_date date NOT NULL,
@@ -133,6 +140,7 @@ CREATE TABLE IF NOT EXISTS public.revisions (
 );
 
 ALTER TABLE public.revisions
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   ADD COLUMN IF NOT EXISTS milestone_day integer,
   ADD COLUMN IF NOT EXISTS due_date date,
   ADD COLUMN IF NOT EXISTS completed_at date,
@@ -146,6 +154,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_revisions_question_milestone_unique
   ON public.revisions (question_id, milestone_day);
 
 -- Performance indexes for revisions
+CREATE INDEX IF NOT EXISTS idx_revisions_user_id ON public.revisions (user_id);
 CREATE INDEX IF NOT EXISTS idx_revisions_due_date ON public.revisions (due_date);
 CREATE INDEX IF NOT EXISTS idx_revisions_completed_at ON public.revisions (completed_at);
 CREATE INDEX IF NOT EXISTS idx_revisions_question_id ON public.revisions (question_id);
@@ -155,6 +164,7 @@ CREATE INDEX IF NOT EXISTS idx_revisions_question_id ON public.revisions (questi
 -- ====================================================================
 CREATE TABLE IF NOT EXISTS public.revision_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   revision_id uuid REFERENCES public.revisions(id) ON DELETE SET NULL,
   question_id uuid REFERENCES public.questions(id) ON DELETE CASCADE,
   milestone_day integer,
@@ -163,6 +173,10 @@ CREATE TABLE IF NOT EXISTS public.revision_sessions (
   timestamp timestamptz DEFAULT now()
 );
 
+ALTER TABLE public.revision_sessions
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_revision_sessions_user_id ON public.revision_sessions (user_id);
 CREATE INDEX IF NOT EXISTS idx_revision_sessions_timestamp ON public.revision_sessions (timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_revision_sessions_question_id ON public.revision_sessions (question_id);
 
@@ -171,6 +185,7 @@ CREATE INDEX IF NOT EXISTS idx_revision_sessions_question_id ON public.revision_
 -- ====================================================================
 CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   type text NOT NULL,
   title text NOT NULL,
   message text NOT NULL,
@@ -179,6 +194,10 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   created_at timestamptz DEFAULT now()
 );
 
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications (user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications (is_read);
 
@@ -187,6 +206,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications (is
 -- ====================================================================
 CREATE TABLE IF NOT EXISTS public.user_settings (
   id text PRIMARY KEY DEFAULT 'default',
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   theme text DEFAULT 'dark',
   email_notifications boolean DEFAULT false,
   push_notifications boolean DEFAULT true,
@@ -213,6 +233,11 @@ CREATE TABLE IF NOT EXISTS public.user_settings (
   updated_at timestamptz DEFAULT now()
 );
 
+ALTER TABLE public.user_settings
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_settings_user_id ON public.user_settings (user_id) WHERE user_id IS NOT NULL;
+
 -- Ensure baseline user settings exist
 INSERT INTO public.user_settings (id, theme, custom_intervals, daily_goal)
 VALUES ('default', 'dark', '{1, 3, 7, 15, 30}'::integer[], 3)
@@ -223,6 +248,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ====================================================================
 CREATE TABLE IF NOT EXISTS public.whatsapp_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   revision_id uuid REFERENCES public.revisions(id) ON DELETE SET NULL,
   question_id uuid REFERENCES public.questions(id) ON DELETE SET NULL,
   recipient_phone text NOT NULL,
@@ -237,6 +263,10 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_logs (
   created_at timestamptz DEFAULT now()
 );
 
+ALTER TABLE public.whatsapp_logs
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_user_id ON public.whatsapp_logs (user_id);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_created_at ON public.whatsapp_logs (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_status ON public.whatsapp_logs (status);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_revision_id ON public.whatsapp_logs (revision_id);
@@ -247,7 +277,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_whatsapp_logs_unique_window
   WHERE status IN ('sent', 'simulated_test_mode') AND revision_id IS NOT NULL;
 
 -- ====================================================================
--- SECTION 8: Row Level Security (RLS) & Service Role Policies
+-- SECTION 8: Row Level Security (RLS) & Policies
 -- ====================================================================
 -- Enable RLS across all 7 tables
 ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
@@ -257,6 +287,52 @@ ALTER TABLE public.revision_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.whatsapp_logs ENABLE ROW LEVEL SECURITY;
+
+-- Authenticated user policies
+DROP POLICY IF EXISTS "Users can only select own questions" ON public.questions;
+CREATE POLICY "Users can only select own questions" ON public.questions FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only insert own questions" ON public.questions;
+CREATE POLICY "Users can only insert own questions" ON public.questions FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only update own questions" ON public.questions;
+CREATE POLICY "Users can only update own questions" ON public.questions FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only delete own questions" ON public.questions;
+CREATE POLICY "Users can only delete own questions" ON public.questions FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only select own revisions" ON public.revisions;
+CREATE POLICY "Users can only select own revisions" ON public.revisions FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only insert own revisions" ON public.revisions;
+CREATE POLICY "Users can only insert own revisions" ON public.revisions FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only update own revisions" ON public.revisions;
+CREATE POLICY "Users can only update own revisions" ON public.revisions FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only delete own revisions" ON public.revisions;
+CREATE POLICY "Users can only delete own revisions" ON public.revisions FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only select own sessions" ON public.revision_sessions;
+CREATE POLICY "Users can only select own sessions" ON public.revision_sessions FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only insert own sessions" ON public.revision_sessions;
+CREATE POLICY "Users can only insert own sessions" ON public.revision_sessions FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only select own notifications" ON public.notifications;
+CREATE POLICY "Users can only select own notifications" ON public.notifications FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only update own notifications" ON public.notifications;
+CREATE POLICY "Users can only update own notifications" ON public.notifications FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only select own settings" ON public.user_settings;
+CREATE POLICY "Users can only select own settings" ON public.user_settings FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only update own settings" ON public.user_settings;
+CREATE POLICY "Users can only update own settings" ON public.user_settings FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can only insert own settings" ON public.user_settings;
+CREATE POLICY "Users can only insert own settings" ON public.user_settings FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
 -- Idempotently create service_role full-access policies
 DO $$

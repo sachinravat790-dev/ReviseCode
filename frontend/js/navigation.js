@@ -215,6 +215,21 @@ export function openSearchModal() {
 
 // Initialize Navigation & Shell Interactions
 export function initNavigation() {
+  // Check authentication for protected application pages (supports clean URLs and .html extensions)
+  const path = (typeof window !== 'undefined' && window.location?.pathname) ? window.location.pathname.toLowerCase() : '';
+  const rawFile = path.split('/').pop() || 'index';
+  const cleanFile = rawFile.replace(/\.html$/, '');
+  const isPublicPage = cleanFile === '' || 
+                       cleanFile === 'index' || 
+                       cleanFile === 'login' || 
+                       cleanFile === 'register' || 
+                       cleanFile === 'forgot-password';
+
+  if (!isPublicPage && !AuthService.isAuthenticated()) {
+    window.location.replace('login.html');
+    return;
+  }
+
   // Mobile Sidebar Drawer
   const menuToggle = document.getElementById('menuToggleBtn');
   const sidebar = document.getElementById('appSidebar');
@@ -280,9 +295,9 @@ export function initNavigation() {
   try {
     const userSession = AuthService.getCurrentUser();
     const storedProfile = StorageManager.getProfile();
-    const fullName = storedProfile?.name || userSession?.name || 'Sachin Kumar';
-    const role = storedProfile?.role || 'Software Engineer';
-    const initials = storedProfile?.avatar || userSession?.avatar || fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'SK';
+    const fullName = userSession?.name || storedProfile?.name || 'Learner';
+    const role = storedProfile?.role || 'Learner';
+    const initials = userSession?.avatar || storedProfile?.avatar || fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
 
     document.querySelectorAll('.sidebar-footer .user-avatar, #userProfileMenuBtn').forEach(el => {
       el.textContent = initials;
@@ -295,7 +310,7 @@ export function initNavigation() {
     if (sidebarRole) sidebarRole.textContent = role;
 
     const dashboardWelcome = document.getElementById('dashboardWelcomeName');
-    if (dashboardWelcome) dashboardWelcome.textContent = fullName.split(' ')[0];
+    if (dashboardWelcome) dashboardWelcome.textContent = fullName.split(' ')[0] || 'Learner';
   } catch (err) {
     console.debug('Error populating navigation profile:', err);
   }

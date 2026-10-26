@@ -5,16 +5,19 @@
 
 import { api } from './api.js';
 import { StorageManager } from './storage.js';
+import { AuthService } from './auth.js';
 import { formatDate, formatRelativeTime, renderEmptyState } from './app.js';
 import { showToast } from './navigation.js';
 
 export async function renderDashboard() {
   const profile = StorageManager.getProfile();
+  const currentUser = AuthService.getCurrentUser() || profile;
 
   // 1. Welcome Header & Name
   const welcomeEl = document.getElementById('dashboardWelcomeName');
   if (welcomeEl) {
-    welcomeEl.textContent = profile.name || 'Sachin';
+    const firstName = currentUser?.name ? currentUser.name.trim().split(' ')[0] : 'Learner';
+    welcomeEl.textContent = firstName;
   }
 
   // 2. Load Stats, Queue, Progress, Questions, and Activity in parallel with resilient fault tolerance
@@ -73,7 +76,7 @@ export async function renderDashboard() {
     if (dueTodayEl) dueTodayEl.textContent = stats.dueToday ?? 0;
     if (overdueEl) overdueEl.textContent = stats.overdue ?? 0;
     if (completionRateEl) completionRateEl.textContent = `${stats.completionRate ?? 100}%`;
-    if (streakCountEl) streakCountEl.textContent = `${stats.completed > 0 ? stats.completed : 1} Days`;
+    if (streakCountEl) streakCountEl.textContent = `${stats.streak ?? 0} Days`;
 
     // Render Revision Queue
     renderQueue(dueMilestones);
@@ -244,7 +247,19 @@ function renderRecentActivity(sessions) {
 
 function renderWeeklyChart(sessions) {
   const chart = document.querySelector('.activity-bar-chart');
-  if (!chart || !Array.isArray(sessions) || sessions.length === 0) return;
+  if (!chart) return;
+
+  const columns = chart.querySelectorAll('.bar-column');
+  if (!Array.isArray(sessions) || sessions.length === 0) {
+    columns.forEach(col => {
+      const fill = col.querySelector('.bar-fill');
+      if (fill) {
+        fill.style.height = '0%';
+        fill.setAttribute('title', '0 revisions completed');
+      }
+    });
+    return;
+  }
 
   // Day indices 0 (Sun) to 6 (Sat)
   const dayCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 0: 0 };

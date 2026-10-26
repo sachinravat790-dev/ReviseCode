@@ -389,7 +389,7 @@ export async function initSettings() {
 }
 
 async function loadSettings() {
-  const profile = StorageManager.getProfile();
+  const profile = AuthService.getCurrentUser() || StorageManager.getProfile();
 
   const nameInput = document.getElementById('setProfileName');
   const roleInput = document.getElementById('setProfileRole');
@@ -398,7 +398,7 @@ async function loadSettings() {
 
   if (nameInput) nameInput.value = profile.name || '';
   if (roleInput) roleInput.value = profile.role || '';
-  if (emailInput) emailInput.value = profile.email || 'sachin@example.com';
+  if (emailInput) emailInput.value = profile.email || '';
   if (interestsInput) interestsInput.value = (profile.interests || []).join(', ');
 
   try {

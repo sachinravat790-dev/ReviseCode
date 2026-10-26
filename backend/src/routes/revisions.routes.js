@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { revisionsController } from '../controllers/revisions.controller.js';
 import { validateBody } from '../middleware/validate.js';
+import { authenticate } from '../middleware/auth.js';
 import {
   completeRevisionSchema,
   rescheduleRevisionSchema,
@@ -9,6 +10,8 @@ import {
 } from '../schemas/revision.schema.js';
 
 const router = Router();
+
+router.use(authenticate);
 
 // Filtered lists (declared before parameterized :id route)
 router.get('/', revisionsController.getAllRevisions);

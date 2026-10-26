@@ -4,7 +4,7 @@ import { successResponse } from '../utils/api-response.js';
 export const settingsController = {
   async getSettings(req, res, next) {
     try {
-      const settings = await supabaseRepository.getSettings();
+      const settings = await supabaseRepository.getSettings(req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Settings retrieved successfully',
@@ -17,7 +17,7 @@ export const settingsController = {
 
   async updateSettings(req, res, next) {
     try {
-      const updated = await supabaseRepository.updateSettings(req.body);
+      const updated = await supabaseRepository.updateSettings(req.body, req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Settings updated successfully',

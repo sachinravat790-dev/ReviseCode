@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/api-response.js';
 export const revisionsController = {
   async getAllRevisions(req, res, next) {
     try {
-      const data = await revisionsService.getAllRevisions(req.query);
+      const data = await revisionsService.getAllRevisions({ ...req.query, userId: req.user?.id });
       return successResponse(res, {
         statusCode: 200,
         message: 'Revisions retrieved successfully',
@@ -17,7 +17,7 @@ export const revisionsController = {
 
   async getTodayRevisions(req, res, next) {
     try {
-      const data = await revisionsService.getTodayRevisions();
+      const data = await revisionsService.getTodayRevisions(req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: "Today's due revisions retrieved successfully",
@@ -30,7 +30,7 @@ export const revisionsController = {
 
   async getUpcomingRevisions(req, res, next) {
     try {
-      const data = await revisionsService.getUpcomingRevisions();
+      const data = await revisionsService.getUpcomingRevisions(req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Upcoming revisions retrieved successfully',
@@ -43,7 +43,7 @@ export const revisionsController = {
 
   async getOverdueRevisions(req, res, next) {
     try {
-      const data = await revisionsService.getOverdueRevisions();
+      const data = await revisionsService.getOverdueRevisions(req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Overdue revisions retrieved successfully',
@@ -56,7 +56,7 @@ export const revisionsController = {
 
   async getCompletedRevisions(req, res, next) {
     try {
-      const data = await revisionsService.getCompletedRevisions();
+      const data = await revisionsService.getCompletedRevisions(req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Completed revisions retrieved successfully',
@@ -69,7 +69,7 @@ export const revisionsController = {
 
   async getRevisionById(req, res, next) {
     try {
-      const revision = await revisionsService.getRevisionById(req.params.id);
+      const revision = await revisionsService.getRevisionById(req.params.id, req.user?.id);
       if (!revision) {
         return errorResponse(res, {
           statusCode: 404,
@@ -88,7 +88,7 @@ export const revisionsController = {
 
   async completeRevision(req, res, next) {
     try {
-      const completed = await revisionsService.completeRevision(req.params.id, req.body);
+      const completed = await revisionsService.completeRevision(req.params.id, req.body, req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Revision milestone marked as completed',
@@ -101,7 +101,7 @@ export const revisionsController = {
 
   async skipRevision(req, res, next) {
     try {
-      const skipped = await revisionsService.skipRevision(req.params.id, req.body);
+      const skipped = await revisionsService.skipRevision(req.params.id, req.body, req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Revision milestone skipped',
@@ -114,7 +114,7 @@ export const revisionsController = {
 
   async rescheduleRevision(req, res, next) {
     try {
-      const rescheduled = await revisionsService.rescheduleRevision(req.params.id, req.body.newDueDate);
+      const rescheduled = await revisionsService.rescheduleRevision(req.params.id, req.body.newDueDate, req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: `Revision milestone rescheduled to ${req.body.newDueDate}`,
@@ -127,7 +127,7 @@ export const revisionsController = {
 
   async createCustomRevision(req, res, next) {
     try {
-      const custom = await revisionsService.createCustomRevision(req.body);
+      const custom = await revisionsService.createCustomRevision({ ...req.body, userId: req.user?.id });
       return successResponse(res, {
         statusCode: 201,
         message: 'Custom revision milestone created successfully',

@@ -228,16 +228,17 @@ export const assistantService = {
     // 3. Grounded Database Tracking Intents:
     // Guarantees real database queries for questions solved today, due revisions, and overdue items
     // are executed with Asia/Kolkata timezone and NEVER bypassed or replaced by LLM hallucinations.
+    const userId = options.userId || null;
     const intent = this.detectIntent(trimmed, lower);
     if (intent) {
       if (intent.intent === 'today_solved_questions') {
-        return await this.handleTodaySolvedQuestionsIntent(isHindi);
+        return await this.handleTodaySolvedQuestionsIntent(isHindi, 'Asia/Kolkata', userId);
       }
       if (intent.intent === 'due_revisions') {
-        return await this.handleDueRevisionsIntent(isHindi);
+        return await this.handleDueRevisionsIntent(isHindi, userId);
       }
       if (intent.intent === 'overdue_revisions') {
-        return await this.handleOverdueRevisionsIntent(isHindi);
+        return await this.handleOverdueRevisionsIntent(isHindi, userId);
       }
     }
 
@@ -422,11 +423,11 @@ export const assistantService = {
   /**
    * Handles today_solved_questions intent with live database retrieval using Asia/Kolkata timezone.
    */
-  async handleTodaySolvedQuestionsIntent(isHindi, timeZone = 'Asia/Kolkata') {
+  async handleTodaySolvedQuestionsIntent(isHindi, timeZone = 'Asia/Kolkata', userId = null) {
     const today = getTodayDateString(timeZone);
     let todayData;
     try {
-      todayData = await questionsService.getTodaySolvedQuestions(timeZone);
+      todayData = await questionsService.getTodaySolvedQuestions({ userId, timeZone });
     } catch (err) {
       console.error('Error fetching questions solved today:', err);
       const errorMsg = isHindi
@@ -486,9 +487,9 @@ export const assistantService = {
     };
   },
 
-  async handleDueRevisionsIntent(isHindi) {
+  async handleDueRevisionsIntent(isHindi, userId = null) {
     try {
-      const items = await revisionsService.getTodayRevisions();
+      const items = await revisionsService.getTodayRevisions(userId);
       if (items.length === 0) {
         return {
           text: isHindi
@@ -532,9 +533,9 @@ export const assistantService = {
     }
   },
 
-  async handleOverdueRevisionsIntent(isHindi) {
+  async handleOverdueRevisionsIntent(isHindi, userId = null) {
     try {
-      const items = await revisionsService.getOverdueRevisions();
+      const items = await revisionsService.getOverdueRevisions(userId);
       if (items.length === 0) {
         return {
           text: isHindi
@@ -1012,7 +1013,7 @@ Would you like to add this problem to your ReviseCode tracker and schedule its 5
     return out;
   },
 
-  async executeCommand(command, payload = {}) {
+  async executeCommand(command, payload = {}, userId = null) {
     if (!command) {
       return {
         handled: false,
@@ -1026,7 +1027,7 @@ Would you like to add this problem to your ReviseCode tracker and schedule its 5
 
     // 1. Show Due Today Revisions
     if (normalized === 'show_due_revisions' || normalized === 'due_today') {
-      const items = await revisionsService.getTodayRevisions();
+      const items = await revisionsService.getTodayRevisions(userId);
       return {
         handled: true,
         command: normalized,
@@ -1037,7 +1038,7 @@ Would you like to add this problem to your ReviseCode tracker and schedule its 5
 
     // 2. Show Overdue Revisions
     if (normalized === 'show_overdue_revisions' || normalized === 'overdue') {
-      const items = await revisionsService.getOverdueRevisions();
+      const items = await revisionsService.getOverdueRevisions(userId);
       return {
         handled: true,
         command: normalized,
@@ -1050,7 +1051,8 @@ Would you like to add this problem to your ReviseCode tracker and schedule its 5
     if (normalized === 'list_questions') {
       const result = await questionsService.getAllQuestions({
         search: payload.search || payload.keyword,
-        subject: payload.subject
+        subject: payload.subject,
+        userId
       });
       return {
         handled: true,
@@ -1087,7 +1089,8 @@ Would you like to add this problem to your ReviseCode tracker and schedule its 5
         topic: payload.topic || 'General',
         approach: payload.approach || '',
         code: payload.code || '',
-        dateSolved: payload.dateSolved
+        dateSolved: payload.dateSolved,
+        userId
       });
 
       return {

@@ -1,94 +1,119 @@
 /**
  * ReviseCode Authentication Service (js/auth.js)
- * Clean architecture ready for Firebase Authentication provider integration.
- * Runs in transparent Development/Demo mode when Firebase is not connected.
+ * Production JWT authentication client communicating with backend /api/auth endpoints.
+ * Supports persistent login sessions, multi-user isolation, and clean state reset.
  */
 
-const SESSION_KEY = 'revisecode_demo_session';
+import { api, invalidateApiCache } from './api.js';
+
+const TOKEN_KEY = 'revisecode_token';
+const USER_KEY = 'revisecode_user';
+const LEGACY_SESSION_KEY = 'revisecode_demo_session';
 
 export const AuthService = {
   isConfiguredWithFirebase() {
-    // Check if Firebase Auth is initialized and configured in window
-    return typeof window.firebase !== 'undefined' && Boolean(window.firebase?.auth);
+    return typeof window !== 'undefined' && typeof window.firebase !== 'undefined' && Boolean(window.firebase?.auth);
+  },
+
+  getToken() {
+    try {
+      if (typeof window === 'undefined') return null;
+      return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || null;
+    } catch (_) {
+      return null;
+    }
   },
 
   getCurrentUser() {
     try {
-      const data = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
+      if (typeof window === 'undefined') return null;
+      const data = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY) || localStorage.getItem(LEGACY_SESSION_KEY) || sessionStorage.getItem(LEGACY_SESSION_KEY);
       if (data) {
         return JSON.parse(data);
       }
-    } catch (e) {
-      // Fallback
-    }
-    // Return standard demo user profile for quick preview
-    return {
-      id: 'demo_user_1',
-      name: 'Sachin Kumar',
-      email: 'sachin@example.com',
-      avatar: 'SK',
-      isDemo: true
-    };
+    } catch (_) {}
+    return null;
+  },
+
+  isAuthenticated() {
+    return Boolean(this.getToken() && this.getCurrentUser());
+  },
+
+  _clearUserData() {
+    try {
+      if (typeof window === 'undefined') return;
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      sessionStorage.removeItem(USER_KEY);
+      localStorage.removeItem(LEGACY_SESSION_KEY);
+      sessionStorage.removeItem(LEGACY_SESSION_KEY);
+      localStorage.removeItem('revisecode_profile');
+      // Wipe out local cached questions/milestones so no stale data leaks across users
+      localStorage.removeItem('revisecode_questions');
+      localStorage.removeItem('revisecode_milestones');
+      localStorage.removeItem('revisecode_sessions');
+      localStorage.removeItem('revisecode_notifications');
+      localStorage.removeItem('revisecode_settings');
+      invalidateApiCache();
+    } catch (_) {}
   },
 
   async login({ email, password, rememberMe = false }) {
-    if (this.isConfiguredWithFirebase()) {
-      // Real Firebase integration point
-      throw new Error('Firebase Authentication is not yet configured with project API keys.');
+    this._clearUserData();
+
+    const res = await api.post('/auth/login', { email, password });
+    const user = res.data?.user;
+    const token = res.data?.token;
+
+    if (!token || !user) {
+      throw new Error(res.message || 'Login failed: missing token or user data');
     }
 
-    // Demo Mode Simulation
-    await new Promise(r => setTimeout(r, 600)); // simulate brief network latency
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem(TOKEN_KEY, token);
+    storage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem('revisecode_profile', JSON.stringify(user));
 
-    const user = {
-      id: 'user_' + Date.now(),
-      name: email.split('@')[0],
-      email: email,
-      avatar: email.substring(0, 2).toUpperCase(),
-      isDemo: true,
-      signedInAt: new Date().toISOString()
-    };
-
-    const storageTarget = rememberMe ? localStorage : sessionStorage;
-    storageTarget.setItem(SESSION_KEY, JSON.stringify(user));
-    return { success: true, user, isDemo: true };
+    return { success: true, user, token };
   },
 
   async register({ fullName, email, password }) {
-    if (this.isConfiguredWithFirebase()) {
-      throw new Error('Firebase Authentication is not yet configured with project API keys.');
+    this._clearUserData();
+
+    const res = await api.post('/auth/register', { fullName, email, password });
+    const user = res.data?.user;
+    const token = res.data?.token;
+
+    if (!token || !user) {
+      throw new Error(res.message || 'Registration failed: missing token or user data');
     }
 
-    await new Promise(r => setTimeout(r, 600));
+    // Default to persistent storage for registration
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem('revisecode_profile', JSON.stringify(user));
 
-    const user = {
-      id: 'user_' + Date.now(),
-      name: fullName,
-      email: email,
-      avatar: fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U',
-      isDemo: true,
-      signedInAt: new Date().toISOString()
-    };
-
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    return { success: true, user, isDemo: true };
+    return { success: true, user, token };
   },
 
   async resetPassword(email) {
-    if (this.isConfiguredWithFirebase()) {
-      throw new Error('Firebase Authentication is not yet configured with project API keys.');
-    }
-
-    await new Promise(r => setTimeout(r, 500));
+    try {
+      await api.post('/auth/reset-password', { email });
+    } catch (_) {}
     return {
       success: true,
-      message: `Demo mode: Password reset instructions simulated for ${email}. In production, Firebase will dispatch an actual verification email.`
+      message: `If an account exists with ${email}, password reset instructions have been sent.`
     };
   },
 
-  logout() {
-    sessionStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(SESSION_KEY);
-    window.location.href = 'login.html';
+  async logout() {
+    try {
+      await api.post('/auth/logout');
+    } catch (_) {}
+    this._clearUserData();
+    if (typeof window !== 'undefined') {
+      window.location.href = 'login.html';
+    }
   }
 };

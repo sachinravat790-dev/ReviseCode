@@ -72,17 +72,7 @@
       <div class="auth-card">
         <div class="auth-header">
           <h1 class="auth-title">Welcome Back</h1>
-          <p class="auth-subtitle">Sign in to your account or test the live demo mode.</p>
-        </div>
-
-        <!-- Demo Mode Notice -->
-        <div class="demo-credentials-box">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-            <strong>Demo Authentication Mode</strong>
-            <span class="badge badge-due" style="font-size: 10px;">Pre-configured</span>
-          </div>
-          <span>Use <code>sachin@example.com</code> / any password, or click:</span>
-          <button type="button" class="demo-fill-btn" id="fillDemoCredentialsBtn">Auto-fill & Explore</button>
+          <p class="auth-subtitle">Sign in to your ReviseCode account.</p>
         </div>
 
         <!-- Social Buttons -->
@@ -169,13 +159,6 @@
         }
       };
     }
-
-    // Auto-fill demo credentials
-    document.getElementById('fillDemoCredentialsBtn').onclick = () => {
-      document.getElementById('loginEmail').value = 'sachin@example.com';
-      document.getElementById('loginPassword').value = 'DemoPass123!';
-      showToast('Credentials Filled', 'Ready to sign in with demo profile.', 'info');
-    };
 
     // Social buttons demo notice
     document.getElementById('btnGoogleAuth').onclick = () => {

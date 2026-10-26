@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '../utils/api-response.js';
 export const notificationsController = {
   async getNotifications(req, res, next) {
     try {
-      const items = await supabaseRepository.getAllNotifications();
+      const items = await supabaseRepository.getAllNotifications(req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Notifications retrieved successfully',
@@ -17,7 +17,7 @@ export const notificationsController = {
 
   async markAsRead(req, res, next) {
     try {
-      const notif = await supabaseRepository.markNotificationAsRead(req.params.id);
+      const notif = await supabaseRepository.markNotificationAsRead(req.params.id, req.user?.id);
       return successResponse(res, {
         statusCode: 200,
         message: 'Notification marked as read',

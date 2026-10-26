@@ -6,43 +6,43 @@
 import { supabaseRepository } from '../repositories/supabase.repository.js';
 
 export const revisionsService = {
-  async getAllRevisions({ status, questionId } = {}) {
-    return await supabaseRepository.getAllRevisions({ status, questionId });
+  async getAllRevisions({ status, questionId, userId } = {}) {
+    return await supabaseRepository.getAllRevisions({ status, questionId, userId });
   },
 
-  async getTodayRevisions() {
-    return await supabaseRepository.getAllRevisions({ status: 'due' });
+  async getTodayRevisions(userId = null) {
+    return await supabaseRepository.getAllRevisions({ status: 'due', userId });
   },
 
-  async getUpcomingRevisions() {
-    return await supabaseRepository.getAllRevisions({ status: 'upcoming' });
+  async getUpcomingRevisions(userId = null) {
+    return await supabaseRepository.getAllRevisions({ status: 'upcoming', userId });
   },
 
-  async getOverdueRevisions() {
-    return await supabaseRepository.getAllRevisions({ status: 'overdue' });
+  async getOverdueRevisions(userId = null) {
+    return await supabaseRepository.getAllRevisions({ status: 'overdue', userId });
   },
 
-  async getCompletedRevisions() {
-    return await supabaseRepository.getAllRevisions({ status: 'completed' });
+  async getCompletedRevisions(userId = null) {
+    return await supabaseRepository.getAllRevisions({ status: 'completed', userId });
   },
 
-  async getRevisionById(id) {
-    return await supabaseRepository.getRevisionById(id);
+  async getRevisionById(id, userId = null) {
+    return await supabaseRepository.getRevisionById(id, userId);
   },
 
-  async completeRevision(id, { recallRating = 'easy', notes = '' } = {}) {
-    return await supabaseRepository.completeRevision(id, { recallRating, notes });
+  async completeRevision(id, { recallRating = 'easy', notes = '' } = {}, userId = null) {
+    return await supabaseRepository.completeRevision(id, { recallRating, notes }, userId);
   },
 
-  async skipRevision(id, { reason = '' } = {}) {
-    return await supabaseRepository.skipRevision(id, { reason });
+  async skipRevision(id, { reason = '' } = {}, userId = null) {
+    return await supabaseRepository.skipRevision(id, { reason }, userId);
   },
 
-  async rescheduleRevision(id, newDueDate) {
-    return await supabaseRepository.rescheduleRevision(id, newDueDate);
+  async rescheduleRevision(id, newDueDate, userId = null) {
+    return await supabaseRepository.rescheduleRevision(id, newDueDate, userId);
   },
 
-  async createCustomRevision({ questionId, milestoneDay, dueDate, notes = '' }) {
-    return await supabaseRepository.createCustomRevision({ questionId, milestoneDay, dueDate, notes });
+  async createCustomRevision({ questionId, milestoneDay, dueDate, notes = '', userId = null }) {
+    return await supabaseRepository.createCustomRevision({ questionId, milestoneDay, dueDate, notes, userId });
   }
 };

@@ -6,6 +6,7 @@
 
 import { api } from './api.js';
 import { StorageManager } from './storage.js';
+import { AuthService } from './auth.js';
 import { showToast, showConfirmModal } from './navigation.js';
 import { formatDate } from './app.js';
 
@@ -13,10 +14,13 @@ const CHAT_HISTORY_KEY = 'revisecode_chat_history';
 export const VOICE_LANGUAGE_STORAGE_KEY = 'revisecode_voice_language';
 
 // Default welcome conversation
-const DEFAULT_CONVERSATION = [
-  {
-    role: 'ai',
-    text: `Hello Sachin! I am your **ReviseCode AI Companion** (currently running in Demo Mode). 
+function getDefaultConversation() {
+  const user = (typeof AuthService !== 'undefined' && AuthService.getCurrentUser()) || StorageManager.getProfile();
+  const name = user?.name ? user.name.trim().split(' ')[0] : 'there';
+  return [
+    {
+      role: 'ai',
+      text: `Hello ${name}! I am your **ReviseCode AI Companion**. 
 
 I can help you log questions, inspect your revision schedule, analyze recall performance, and reinforce your memory.
 I now support **bilingual Hindi and English voice input** (हिंदी और अंग्रेज़ी)!
@@ -27,9 +31,10 @@ Try one of the suggested prompts below or ask:
 • *"Which questions are overdue?"* or *"कौन से प्रश्न बाकी हैं?"*
 • *"Explain my saved binary search solution"* or *"बाइनरी सर्च समझाओ"*
 • *"Show questions I marked as difficult"* or *"कठिन प्रश्न दिखाओ"*`,
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }
-];
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  ];
+}
 
 /**
  * Recognizes all equivalent Hindi, English, and Hinglish questions for today's solved problems:
@@ -865,9 +870,9 @@ function loadMessages() {
   let messages = [];
   try {
     const saved = localStorage.getItem(CHAT_HISTORY_KEY);
-    messages = saved ? JSON.parse(saved) : DEFAULT_CONVERSATION;
+    messages = saved ? JSON.parse(saved) : getDefaultConversation();
   } catch (e) {
-    messages = DEFAULT_CONVERSATION;
+    messages = getDefaultConversation();
   }
 
   renderMessages(messages);
@@ -989,9 +994,9 @@ async function handleUserMessage(prompt) {
   let messages = [];
   try {
     const saved = localStorage.getItem(CHAT_HISTORY_KEY);
-    messages = saved ? JSON.parse(saved) : DEFAULT_CONVERSATION;
+    messages = saved ? JSON.parse(saved) : getDefaultConversation();
   } catch (e) {
-    messages = DEFAULT_CONVERSATION;
+    messages = getDefaultConversation();
   }
 
   messages.push({

@@ -5,23 +5,27 @@
 
 import { supabaseRepository } from '../repositories/supabase.repository.js';
 import { generateMandatoryMilestones, getTodayDateString } from '../utils/dates.js';
+import { config } from '../config/env.js';
+import { DEFAULT_TEST_USER_ID } from '../middleware/auth.js';
 
 export const questionsService = {
   async getAllQuestions(params = {}) {
     return await supabaseRepository.getAllQuestions(params);
   },
 
-  async getQuestionById(id) {
-    return await supabaseRepository.getQuestionById(id);
+  async getQuestionById(id, userId = null) {
+    return await supabaseRepository.getQuestionById(id, userId);
   },
 
-  async checkDuplicate(platform, problemNumber, title) {
-    return await supabaseRepository.checkDuplicateQuestion(platform, problemNumber, title);
+  async checkDuplicate(platform, problemNumber, title, userId = null) {
+    return await supabaseRepository.checkDuplicateQuestion(platform, problemNumber, title, userId);
   },
 
   async createQuestion(data) {
+    const userId = data.userId || data.user_id || (config.nodeEnv === 'test' ? DEFAULT_TEST_USER_ID : null);
+
     // 1. Create the question in Supabase
-    const createdQuestion = await supabaseRepository.createQuestion(data);
+    const createdQuestion = await supabaseRepository.createQuestion({ ...data, userId });
 
     // 2. Automatically generate and persist 5 mandatory revision milestones (Day 3, 7, 12, 20, 30)
     const dateSolved = data.dateSolved || getTodayDateString();
@@ -31,6 +35,8 @@ export const questionsService = {
       questionId: createdQuestion.id,
       milestoneDay: m.milestoneDay,
       dueDate: m.dueDate,
+      userId,
+      user_id: userId,
       notes: ''
     }));
 
@@ -42,31 +48,46 @@ export const questionsService = {
       category: 'Revisions',
       title: `Question Saved: ${createdQuestion.title}`,
       message: `Scheduled 5 revision milestones for Day 3, 7, 12, 20, and 30.`,
-      questionId: createdQuestion.id
+      questionId: createdQuestion.id,
+      userId,
+      user_id: userId
     });
 
     return createdQuestion;
   },
 
-  async updateQuestion(id, data) {
-    return await supabaseRepository.updateQuestion(id, data);
+  async updateQuestion(id, data, userId = null) {
+    return await supabaseRepository.updateQuestion(id, data, userId);
   },
 
-  async toggleBookmark(id) {
-    return await supabaseRepository.toggleBookmark(id);
+  async toggleBookmark(id, userId = null) {
+    return await supabaseRepository.toggleBookmark(id, userId);
   },
 
-  async deleteQuestion(id) {
-    return await supabaseRepository.deleteQuestion(id);
+  async deleteQuestion(id, userId = null) {
+    return await supabaseRepository.deleteQuestion(id, userId);
   },
 
   /**
    * Retrieves questions solved today using Asia/Kolkata timezone.
    * Strictly counts new questions solved on this date, NOT revision completions.
    */
-  async getTodaySolvedQuestions(timeZone = 'Asia/Kolkata') {
+  async getTodaySolvedQuestions(userIdOrOptions, maybeTimeZone) {
+    let userId = null;
+    let timeZone = 'Asia/Kolkata';
+
+    if (typeof userIdOrOptions === 'string' && userIdOrOptions.includes('/')) {
+      timeZone = userIdOrOptions;
+    } else if (typeof userIdOrOptions === 'string') {
+      userId = userIdOrOptions;
+      if (maybeTimeZone) timeZone = maybeTimeZone;
+    } else if (userIdOrOptions && typeof userIdOrOptions === 'object') {
+      userId = userIdOrOptions.userId || null;
+      timeZone = userIdOrOptions.timeZone || 'Asia/Kolkata';
+    }
+
     const today = getTodayDateString(timeZone);
-    const result = await supabaseRepository.getAllQuestions({ limit: 1000 });
+    const result = await supabaseRepository.getAllQuestions({ limit: 1000, userId });
     const all = result?.items || [];
     const solvedToday = all.filter(q => q.dateSolved === today);
     return {

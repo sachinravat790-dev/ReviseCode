@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { questionsController } from '../controllers/questions.controller.js';
 import { validateBody, validateQuery } from '../middleware/validate.js';
+import { authenticate } from '../middleware/auth.js';
 import {
   createQuestionSchema,
   updateQuestionSchema,
@@ -8,6 +9,8 @@ import {
 } from '../schemas/question.schema.js';
 
 const router = Router();
+
+router.use(authenticate);
 
 router.get('/', validateQuery(queryQuestionsSchema), questionsController.getAllQuestions);
 router.get('/:id', questionsController.getQuestionById);

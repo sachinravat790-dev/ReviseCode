@@ -20,9 +20,9 @@ export const MANDATORY_INTERVALS = [3, 7, 12, 20, 30];
 
 // Seed Subjects
 const DEFAULT_SUBJECTS = [
-  { id: 'sub_dsa', name: 'DSA', color: '#7c3aed', icon: 'binary', topics: ['Arrays', 'Two Pointers', 'Binary Search', 'Sliding Window', 'Dynamic Programming', 'Trees', 'Graphs'], questionCount: 6, pendingCount: 3 },
-  { id: 'sub_sql', name: 'SQL', color: '#3b82f6', icon: 'database', topics: ['Joins', 'Window Functions', 'Aggregations', 'Subqueries', 'Indexing'], questionCount: 1, pendingCount: 1 },
-  { id: 'sub_web', name: 'Web Development', color: '#10b981', icon: 'globe', topics: ['JavaScript ES6', 'DOM API', 'CSS Grid', 'Event Loop', 'Async/Await'], questionCount: 1, pendingCount: 0 },
+  { id: 'sub_dsa', name: 'DSA', color: '#7c3aed', icon: 'binary', topics: ['Arrays', 'Two Pointers', 'Binary Search', 'Sliding Window', 'Dynamic Programming', 'Trees', 'Graphs'], questionCount: 0, pendingCount: 0 },
+  { id: 'sub_sql', name: 'SQL', color: '#3b82f6', icon: 'database', topics: ['Joins', 'Window Functions', 'Aggregations', 'Subqueries', 'Indexing'], questionCount: 0, pendingCount: 0 },
+  { id: 'sub_web', name: 'Web Development', color: '#10b981', icon: 'globe', topics: ['JavaScript ES6', 'DOM API', 'CSS Grid', 'Event Loop', 'Async/Await'], questionCount: 0, pendingCount: 0 },
   { id: 'sub_apt', name: 'Aptitude', color: '#f59e0b', icon: 'calculator', topics: ['Time & Work', 'Permutations', 'Percentages', 'Ratios'], questionCount: 0, pendingCount: 0 },
   { id: 'sub_math', name: 'Mathematics', color: '#ec4899', icon: 'sigma', topics: ['Number Theory', 'Probability', 'Combinatorics'], questionCount: 0, pendingCount: 0 },
   { id: 'sub_other', name: 'Other', color: '#64748b', icon: 'folder', topics: ['System Design', 'General'], questionCount: 0, pendingCount: 0 }
@@ -465,14 +465,14 @@ ORDER BY score DESC;`,
   ];
 
   const profile = {
-    name: 'Sachin Kumar',
-    email: 'sachin@example.com',
-    avatar: 'SK',
-    role: 'Software Engineer & Learner',
-    dateJoined: '2026-09-15',
-    streakDays: 5,
+    name: 'New Learner',
+    email: '',
+    avatar: 'NL',
+    role: 'Learner',
+    dateJoined: new Date().toISOString().split('T')[0],
+    streakDays: 0,
     streakFreezeLeft: 2,
-    interests: ['DSA', 'System Design', 'Algorithms', 'Full Stack']
+    interests: []
   };
 
   const settings = {
@@ -495,12 +495,27 @@ ORDER BY score DESC;`,
 
 // Storage Manager Service
 export const StorageManager = {
-  // Initialize default seed data if not present
+  // Initialize safe default storage structures without populating unowned demo data
   init() {
     try {
       const initialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
       if (!initialized) {
-        this.resetToSeed();
+        if (!localStorage.getItem(STORAGE_KEYS.SUBJECTS)) {
+          localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(DEFAULT_SUBJECTS));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.QUESTIONS)) {
+          localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.MILESTONES)) {
+          localStorage.setItem(STORAGE_KEYS.MILESTONES, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.SESSIONS)) {
+          localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) {
+          localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify([]));
+        }
+        localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
       }
     } catch (e) {
       console.warn('localStorage not accessible or restricted:', e);
@@ -830,10 +845,35 @@ export const StorageManager = {
   getProfile() {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.PROFILE);
-      return data ? JSON.parse(data) : getSeedData().profile;
+      if (data) return JSON.parse(data);
+
+      const sessionUser = localStorage.getItem('revisecode_user') || sessionStorage.getItem('revisecode_user');
+      if (sessionUser) {
+        const u = JSON.parse(sessionUser);
+        return {
+          name: u.name || 'Learner',
+          email: u.email || '',
+          avatar: u.avatar || 'U',
+          role: 'Learner',
+          dateJoined: u.createdAt ? u.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+          streakDays: 0,
+          streakFreezeLeft: 0,
+          interests: []
+        };
+      }
     } catch (e) {
-      return getSeedData().profile;
+      // Fallback
     }
+    return {
+      name: 'Learner',
+      email: '',
+      avatar: 'U',
+      role: 'Learner',
+      dateJoined: new Date().toISOString().split('T')[0],
+      streakDays: 0,
+      streakFreezeLeft: 0,
+      interests: []
+    };
   },
 
   saveProfile(profileData) {
@@ -876,7 +916,7 @@ export const StorageManager = {
       dueTodayCount: dueToday.length,
       overdueCount: overdue.length,
       completionRate: completionRate,
-      streakDays: profile.streakDays || 5,
+      streakDays: profile.streakDays || 0,
       completedSessionsCount: sessions.length
     };
   },

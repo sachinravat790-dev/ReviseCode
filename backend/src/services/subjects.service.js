@@ -6,12 +6,12 @@
 import { supabaseRepository } from '../repositories/supabase.repository.js';
 
 export const subjectsService = {
-  async getAllSubjects() {
-    return await supabaseRepository.getAllSubjects();
+  async getAllSubjects(userId = null) {
+    return await supabaseRepository.getAllSubjects(userId);
   },
 
-  async getSubjectById(id) {
-    return await supabaseRepository.getSubjectById(id);
+  async getSubjectById(id, userId = null) {
+    return await supabaseRepository.getSubjectById(id, userId);
   },
 
   async createSubject(data) {

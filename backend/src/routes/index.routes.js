@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import healthRoutes from './health.routes.js';
+import authRoutes from './auth.routes.js';
 import questionsRoutes from './questions.routes.js';
 import subjectsRoutes from './subjects.routes.js';
 import revisionsRoutes from './revisions.routes.js';
@@ -12,6 +13,7 @@ import whatsappRoutes from './whatsapp.routes.js';
 const router = Router();
 
 router.use('/', healthRoutes);
+router.use('/auth', authRoutes);
 router.use('/questions', questionsRoutes);
 router.use('/subjects', subjectsRoutes);
 router.use('/revisions', revisionsRoutes);

@@ -51,6 +51,13 @@ export async function apiRequest(endpoint, options = {}) {
     'Accept': 'application/json'
   };
 
+  try {
+    const token = localStorage.getItem('revisecode_token') || sessionStorage.getItem('revisecode_token');
+    if (token) {
+      defaultHeaders['Authorization'] = `Bearer ${token}`;
+    }
+  } catch (_) {}
+
   let body = options.body;
   if (body !== undefined && body !== null) {
     if (typeof body === 'object' && !(body instanceof FormData) && !(body instanceof Blob)) {
@@ -85,6 +92,22 @@ export async function apiRequest(endpoint, options = {}) {
       }
 
       if (!response.ok) {
+        if (response.status === 401 && !cleanEndpoint.startsWith('/auth/')) {
+          try {
+            localStorage.removeItem('revisecode_token');
+            sessionStorage.removeItem('revisecode_token');
+            localStorage.removeItem('revisecode_user');
+            sessionStorage.removeItem('revisecode_user');
+          } catch (_) {}
+          const path = (typeof window !== 'undefined' && window.location?.pathname) ? window.location.pathname.toLowerCase() : '';
+          const rawFile = path.split('/').pop() || 'index';
+          const cleanFile = rawFile.replace(/\.html$/, '');
+          const isPublicPage = cleanFile === '' || cleanFile === 'index' || cleanFile === 'login' || cleanFile === 'register' || cleanFile === 'forgot-password';
+          if (!isPublicPage && typeof window !== 'undefined') {
+            window.location.href = 'login.html';
+          }
+        }
+
         let errorMessage = data?.message || `HTTP ${response.status}: Request failed`;
         if (Array.isArray(data?.errors) && data.errors.length > 0) {
           const fieldErrors = data.errors.map(err => {

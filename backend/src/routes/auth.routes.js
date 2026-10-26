@@ -1,0 +1,14 @@
+import { Router } from 'express';
+import { authController } from '../controllers/auth.controller.js';
+import { validateBody } from '../middleware/validate.js';
+import { registerSchema, loginSchema } from '../schemas/auth.schema.js';
+import { authenticate } from '../middleware/auth.js';
+
+const router = Router();
+
+router.post('/register', validateBody(registerSchema), authController.register);
+router.post('/login', validateBody(loginSchema), authController.login);
+router.get('/me', authenticate, authController.getMe);
+router.post('/logout', authController.logout);
+
+export default router;
