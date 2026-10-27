@@ -52,13 +52,14 @@ export const whatsappService = {
         : (configured ? (hasSentLiveMessage ? 'live_verified' : 'live_pending_verification') : 'unconfigured'),
       apiVersion: config.whatsappApiVersion,
       phoneNumberIdMasked: maskSensitive(config.whatsappPhoneNumberId),
-      recipientPhoneMasked: maskSensitive(config.whatsappRecipientPhoneNumber),
+      recipientPhoneMasked: maskSensitive(config.whatsappRecipientPhoneNumber || settings?.whatsappPhone || settings?.phoneNumber || ''),
       businessAccountIdMasked: maskSensitive(config.whatsappBusinessAccountId),
       templateName: config.whatsappTemplateName || null,
       templateLang: config.whatsappTemplateLang || 'en_US',
       userSettings: settings
         ? {
             whatsappNotifications: Boolean(settings.whatsappNotifications ?? settings.whatsAppNotifications),
+            whatsappPhone: settings.whatsappPhone || settings.phoneNumber || '',
             reminderTime: settings.reminderTime || '09:00',
             quietHoursStart: settings.quietHoursStart || '22:00',
             quietHoursEnd: settings.quietHoursEnd || '08:00',
@@ -190,13 +191,20 @@ export const whatsappService = {
    * Only attempts dispatch when required recipient and credentials are provided.
    */
   async sendTestNotification({ recipientPhone, customText } = {}) {
-    const targetRecipient = recipientPhone || config.whatsappRecipientPhoneNumber;
+    let settings = null;
+    try {
+      settings = await supabaseRepository.getSettings();
+    } catch {
+      // Ignore settings lookup error
+    }
+
+    const targetRecipient = recipientPhone || settings?.whatsappPhone || settings?.phoneNumber || config.whatsappRecipientPhoneNumber;
 
     if (!targetRecipient) {
       return {
         success: false,
         status: 'unconfigured',
-        errorMessage: 'WhatsApp recipient phone number is not configured. Please set WHATSAPP_RECIPIENT_PHONE_NUMBER in backend/.env with your country code (e.g. 919876543210 without "+" or special characters).'
+        errorMessage: 'WhatsApp recipient phone number is not configured. Please set WHATSAPP_RECIPIENT_PHONE_NUMBER in backend/.env or configure your phone number in Notifications preferences.'
       };
     }
 
@@ -313,7 +321,7 @@ export const whatsappService = {
     }
 
     // 3. Verify recipient phone number
-    const targetRecipient = recipientPhone || config.whatsappRecipientPhoneNumber;
+    const targetRecipient = recipientPhone || settings?.whatsappPhone || settings?.phoneNumber || config.whatsappRecipientPhoneNumber;
     if (!targetRecipient) {
       return {
         window,
@@ -322,7 +330,7 @@ export const whatsappService = {
         sent: 0,
         skipped: 0,
         reason: 'missing_recipient_phone_number',
-        message: 'WhatsApp recipient phone number is not configured. Set WHATSAPP_RECIPIENT_PHONE_NUMBER in backend/.env',
+        message: 'WhatsApp recipient phone number is not configured. Set WHATSAPP_RECIPIENT_PHONE_NUMBER in backend/.env or configure your phone number in Notifications preferences.',
         details: []
       };
     }

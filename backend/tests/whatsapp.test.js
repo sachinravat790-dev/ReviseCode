@@ -373,3 +373,40 @@ test('WhatsAppScheduler: Calculates evening reminder time and manages timer life
   const stoppedState = whatsappScheduler.getState();
   assert.equal(stoppedState.running, false);
 });
+
+test('User Settings: Saves and retrieves whatsappPhone properly', async () => {
+  setupTestDatabase();
+
+  await supabaseRepository.updateSettings({
+    whatsappNotifications: true,
+    whatsappPhone: '+91 98765-43210'
+  });
+
+  const settings = await supabaseRepository.getSettings();
+  assert.equal(settings.whatsappNotifications, true);
+  assert.equal(settings.whatsappPhone, '+91 98765-43210');
+});
+
+test('Milestone Reminders: Uses recipient phone saved in user_settings if not explicitly provided', async () => {
+  setupTestDatabase();
+  const origEnvPhone = config.whatsappRecipientPhoneNumber;
+  config.whatsappRecipientPhoneNumber = ''; // Emulate empty env
+
+  try {
+    await supabaseRepository.updateSettings({
+      whatsappNotifications: true,
+      whatsappPhone: '+919876543210'
+    });
+
+    const result = await whatsappService.processMilestoneReminders({
+      window: 'scheduled',
+      force: true
+    });
+
+    assert.ok(result.processed >= 1);
+    assert.ok(result.sent >= 1);
+    assert.notEqual(result.reason, 'missing_recipient_phone_number');
+  } finally {
+    config.whatsappRecipientPhoneNumber = origEnvPhone;
+  }
+});

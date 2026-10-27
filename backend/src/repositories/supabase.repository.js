@@ -165,12 +165,15 @@ export function mapSettingsFromDb(row) {
       emailNotifications: true,
       whatsAppNotifications: false,
       whatsappNotifications: false,
+      whatsappPhone: '',
+      phoneNumber: '',
       quietHoursStart: '22:00',
       quietHoursEnd: '08:00',
       aiDemoMode: true
     };
   }
   const wa = Boolean(row.whatsapp_notifications);
+  const phone = row.whatsapp_phone || row.phone_number || '';
   return {
     theme: row.theme || 'dark',
     timeZone: row.time_zone || 'Asia/Kolkata (UTC+05:30)',
@@ -182,6 +185,8 @@ export function mapSettingsFromDb(row) {
     emailNotifications: Boolean(row.email_notifications),
     whatsAppNotifications: wa,
     whatsappNotifications: wa,
+    whatsappPhone: phone,
+    phoneNumber: phone,
     quietHoursStart: row.quiet_hours_start || '22:00',
     quietHoursEnd: row.quiet_hours_end || '08:00',
     aiDemoMode: Boolean(row.ai_demo_mode)
@@ -2039,6 +2044,8 @@ export class SupabaseRepository {
     if (updates.emailNotifications !== undefined) payload.email_notifications = updates.emailNotifications;
     const waVal = updates.whatsAppNotifications ?? updates.whatsappNotifications ?? updates.whatsapp_notifications;
     if (waVal !== undefined) payload.whatsapp_notifications = waVal;
+    const phoneVal = updates.whatsappPhone ?? updates.whatsapp_phone ?? updates.phoneNumber;
+    if (phoneVal !== undefined) payload.whatsapp_phone = phoneVal;
     if (updates.quietHoursStart !== undefined) payload.quiet_hours_start = updates.quietHoursStart;
     if (updates.quietHoursEnd !== undefined) payload.quiet_hours_end = updates.quietHoursEnd;
     if (updates.aiDemoMode !== undefined) payload.ai_demo_mode = updates.aiDemoMode;
@@ -2064,7 +2071,7 @@ export class SupabaseRepository {
 
       if (error) {
         if (error.code === '42703' || isMissingColumnError(error)) {
-          const { user_id, ...basePayload } = payload;
+          const { user_id, whatsapp_phone, ...basePayload } = payload;
           const { data: fbData, error: fbErr } = await this.client
             .from('user_settings')
             .upsert(basePayload)
@@ -2074,7 +2081,7 @@ export class SupabaseRepository {
             if (isSchemaOrColumnError(fbErr)) return updatedSettings;
             throw new Error(`Failed to update settings: ${fbErr.message}`);
           }
-          return mapSettingsFromDb(fbData);
+          return { ...mapSettingsFromDb(fbData), whatsappPhone: phoneVal || '' };
         }
         if (isSchemaOrColumnError(error)) {
           assertProductionSchema('user_settings', error);
