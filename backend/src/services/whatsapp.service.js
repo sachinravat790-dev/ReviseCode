@@ -331,7 +331,8 @@ export const whatsappService = {
     targetDate = null,
     force = false,
     dryRun = false,
-    recipientPhone = null
+    recipientPhone = null,
+    apiKey = null
   } = {}) {
     const dateStr = targetDate || getTodayDateString();
     const settings = await supabaseRepository.getSettings();
@@ -373,37 +374,7 @@ export const whatsappService = {
       };
     }
 
-    // 3. Verify recipient phone number
-    const targetRecipient = recipientPhone || settings?.whatsappPhone || settings?.phoneNumber || config.whatsappRecipientPhoneNumber;
-    if (!targetRecipient) {
-      return {
-        window,
-        targetDate: dateStr,
-        processed: 0,
-        sent: 0,
-        skipped: 0,
-        reason: 'missing_recipient_phone_number',
-        message: 'WhatsApp recipient phone number is not configured. Set WHATSAPP_RECIPIENT_PHONE_NUMBER in backend/.env or configure your phone number in Notifications preferences.',
-        details: []
-      };
-    }
-
-    const phoneValidation = validateInternationalPhoneNumber(targetRecipient);
-    if (!phoneValidation.valid) {
-      return {
-        window,
-        targetDate: dateStr,
-        processed: 0,
-        sent: 0,
-        skipped: 0,
-        reason: 'invalid_recipient_phone_number',
-        message: phoneValidation.reason,
-        details: []
-      };
-    }
-    const recipient = phoneValidation.sanitized;
-
-    // 4. Retrieve candidate revisions (due today or overdue)
+    // 3. Retrieve candidate revisions (due today or overdue)
     const [dueRevisions, overdueRevisions] = await Promise.all([
       supabaseRepository.getAllRevisions({ status: 'due' }),
       supabaseRepository.getAllRevisions({ status: 'overdue' })
@@ -418,6 +389,39 @@ export const whatsappService = {
     });
 
     const candidates = Array.from(candidateMap.values());
+
+    // 4. Resolve default recipient phone number
+    const defaultRecipientRaw = recipientPhone || settings?.whatsappPhone || settings?.phoneNumber || config.whatsappRecipientPhoneNumber;
+    let defaultRecipient = null;
+
+    if (defaultRecipientRaw) {
+      const phoneValidation = validateInternationalPhoneNumber(defaultRecipientRaw);
+      if (!phoneValidation.valid) {
+        return {
+          window,
+          targetDate: dateStr,
+          processed: 0,
+          sent: 0,
+          skipped: 0,
+          reason: 'invalid_recipient_phone_number',
+          message: phoneValidation.reason,
+          details: []
+        };
+      }
+      defaultRecipient = phoneValidation.sanitized;
+    } else if (candidates.length === 0) {
+      return {
+        window,
+        targetDate: dateStr,
+        processed: 0,
+        sent: 0,
+        skipped: 0,
+        reason: 'missing_recipient_phone_number',
+        message: 'WhatsApp recipient phone number is not configured. Set WHATSAPP_RECIPIENT_PHONE_NUMBER in backend/.env or configure your phone number in Notifications preferences.',
+        details: []
+      };
+    }
+
     const results = [];
     let sentCount = 0;
     let skippedCount = 0;
@@ -476,21 +480,68 @@ export const whatsappService = {
         continue;
       }
 
+      // Multi-user routing: resolve user-specific recipient and API key
+      const targetUserId = rev.userId || question?.userId || null;
+      let effectiveRecipient = defaultRecipient;
+      let effectiveApiKey = apiKey || settings?.whatsappApiKey || config.callmebotApiKey || null;
+
+      if (targetUserId) {
+        try {
+          const userSpecificSettings = await supabaseRepository.getSettings(targetUserId);
+          if (userSpecificSettings) {
+            // Check if this specific user has disabled WhatsApp notifications
+            const userWaOn = Boolean(userSpecificSettings.whatsappNotifications ?? userSpecificSettings.whatsAppNotifications);
+            if (!force && !userWaOn) {
+              skippedCount += 1;
+              results.push({
+                revisionId: rev.id,
+                userId: targetUserId,
+                status: 'skipped_user_disabled',
+                reason: `User ${targetUserId} has disabled WhatsApp notifications.`
+              });
+              continue;
+            }
+            if (userSpecificSettings.whatsappPhone) {
+              const uVal = validateInternationalPhoneNumber(userSpecificSettings.whatsappPhone);
+              if (uVal.valid) {
+                effectiveRecipient = uVal.sanitized;
+              }
+            }
+            if (userSpecificSettings.whatsappApiKey) {
+              effectiveApiKey = userSpecificSettings.whatsappApiKey;
+            }
+          }
+        } catch {
+          // Gracefully fall back to default recipient
+        }
+      }
+
+      if (!effectiveRecipient) {
+        skippedCount += 1;
+        results.push({
+          revisionId: rev.id,
+          userId: targetUserId,
+          status: 'skipped_missing_phone',
+          reason: 'No phone number configured for this user or recipient.'
+        });
+        continue;
+      }
+
       // Dispatch message
       const sendResult = await this.sendRawMessage({
-        to: recipient,
+        to: effectiveRecipient,
         type: config.whatsappTemplateName ? 'template' : 'text',
         textBody: messageBody,
         templateName: config.whatsappTemplateName,
         templateLang: config.whatsappTemplateLang,
-        apiKey: settings?.whatsappApiKey || config.callmebotApiKey || null
+        apiKey: effectiveApiKey
       });
 
       // Record delivery log
       await supabaseRepository.recordWhatsAppLog({
         revisionId: rev.id,
         questionId: rev.questionId,
-        recipientPhone: recipient,
+        recipientPhone: effectiveRecipient,
         reminderWindow: window,
         reminderDate: dateStr,
         messageType: config.whatsappTemplateName ? 'template' : 'text',
@@ -499,6 +550,7 @@ export const whatsappService = {
         whatsappMessageId: sendResult.whatsappMessageId || null,
         errorMessage: sendResult.errorMessage || null,
         metadata: {
+          userId: targetUserId,
           milestoneDay: rev.milestoneDay,
           questionTitle: question?.title || '',
           window,

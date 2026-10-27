@@ -21,6 +21,7 @@ import { whatsappService } from '../src/services/whatsapp.service.js';
 import { whatsappScheduler } from '../src/services/whatsapp-scheduler.service.js';
 import { supabaseRepository } from '../src/repositories/supabase.repository.js';
 import { getTodayDateString, addDays } from '../src/utils/dates.js';
+import { questionsService } from '../src/services/questions.service.js';
 
 // Dedicated test recipient strictly for automated test isolation
 const TEST_RECIPIENT = '919876543210';
@@ -409,4 +410,47 @@ test('Milestone Reminders: Uses recipient phone saved in user_settings if not ex
   } finally {
     config.whatsappRecipientPhoneNumber = origEnvPhone;
   }
+});
+
+test('Multi-User WhatsApp: Delivers revisions to individual users based on their own settings', async () => {
+  setupTestDatabase();
+
+  const userA = 'user_alice_123';
+  const userB = 'user_bob_456';
+
+  await supabaseRepository.updateSettings({
+    whatsappNotifications: true,
+    whatsappPhone: '+919111111111'
+  }, userA);
+
+  await supabaseRepository.updateSettings({
+    whatsappNotifications: true,
+    whatsappPhone: '+919222222222'
+  }, userB);
+
+  // Create question for Alice
+  const qA = await questionsService.createQuestion({
+    title: 'Alice Dynamic Programming',
+    platform: 'LeetCode',
+    problemNumber: '991',
+    difficulty: 'Hard',
+    topic: 'DP',
+    subject: 'Algorithms',
+    userId: userA
+  });
+
+  const todayStr = getTodayDateString();
+  const revs = await supabaseRepository.getAllRevisions({ questionId: qA.id });
+  const milestone = revs[0];
+  await supabaseRepository.rescheduleRevision(milestone.id, todayStr, userA);
+
+  const result = await whatsappService.processMilestoneReminders({
+    window: 'scheduled',
+    force: true,
+    targetDate: todayStr
+  });
+
+  assert.ok(result.sent >= 1);
+  const logs = await supabaseRepository.getWhatsAppLogs(5);
+  assert.ok(logs.some(l => l.recipient_phone === '919111111111'));
 });
