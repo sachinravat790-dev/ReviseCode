@@ -58,7 +58,7 @@ export const authController = {
   getOAuthUrl(req, res, next) {
     try {
       const { provider } = req.params;
-      const redirectTo = req.query.redirectTo || `${config.clientOrigin}/login.html`;
+      const redirectTo = req.query.redirectTo || `${config.clientOrigin}/login`;
       const supabaseUrl = config.supabaseUrl || 'https://uffxohelmzgvgsbnuuyc.supabase.co';
       const cleanProvider = (provider || 'google').toLowerCase();
       const url = `${supabaseUrl}/auth/v1/authorize?provider=${encodeURIComponent(cleanProvider)}&redirect_to=${encodeURIComponent(redirectTo)}`;

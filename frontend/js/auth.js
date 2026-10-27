@@ -112,7 +112,7 @@ export const AuthService = {
    */
   async initiateOAuth(provider) {
     const origin = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : 'https://revise-code.vercel.app';
-    const redirectUrl = `${origin}/login.html`;
+    const redirectUrl = `${origin}/login`;
 
     let targetUrl = null;
     try {

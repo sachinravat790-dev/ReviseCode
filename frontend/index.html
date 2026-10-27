@@ -537,6 +537,11 @@
   <!-- Scripts -->
   <script type="module" src="js/theme.js"></script>
   <script>
+    // Handle OAuth redirect if landed on root domain
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      window.location.replace('dashboard.html' + window.location.hash);
+    }
+
     // FAQ Accordion interaction
     document.querySelectorAll('.faq-question').forEach(button => {
       button.addEventListener('click', () => {
