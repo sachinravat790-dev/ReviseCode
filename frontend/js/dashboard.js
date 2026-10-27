@@ -274,7 +274,6 @@ function renderWeeklyChart(sessions) {
 
   // Map Mon-Sun columns
   const dayOrder = [1, 2, 3, 4, 5, 6, 0];
-  const columns = chart.querySelectorAll('.bar-column');
   const maxCount = Math.max(...Object.values(dayCounts), 3);
 
   columns.forEach((col, idx) => {
