@@ -53,5 +53,22 @@ export const authController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getOAuthUrl(req, res, next) {
+    try {
+      const { provider } = req.params;
+      const redirectTo = req.query.redirectTo || `${config.clientOrigin}/login.html`;
+      const supabaseUrl = config.supabaseUrl || 'https://uffxohelmzgvgsbnuuyc.supabase.co';
+      const cleanProvider = (provider || 'google').toLowerCase();
+      const url = `${supabaseUrl}/auth/v1/authorize?provider=${encodeURIComponent(cleanProvider)}&redirect_to=${encodeURIComponent(redirectTo)}`;
+      return successResponse(res, {
+        statusCode: 200,
+        message: 'OAuth authorization URL generated',
+        data: { url, provider: cleanProvider, redirectTo }
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };

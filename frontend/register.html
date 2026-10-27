@@ -173,16 +173,95 @@
       };
     }
 
-    // Social buttons demo notice
-    document.getElementById('btnGoogleReg').onclick = () => {
-      showToast('Firebase OAuth Notice', 'Google sign-up integration point ready.', 'info');
-      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    // Social buttons: Real Supabase OAuth flow
+    const handleSocialAuth = async (provider) => {
+      try {
+        const btn = provider === 'google' ? document.getElementById('btnGoogleReg') : document.getElementById('btnGithubReg');
+        if (btn) btn.disabled = true;
+        await AuthService.initiateOAuth(provider);
+      } catch (err) {
+        showToast('OAuth Error', err.message || 'Could not initiate social signup.', 'error');
+        const btn = provider === 'google' ? document.getElementById('btnGoogleReg') : document.getElementById('btnGithubReg');
+        if (btn) btn.disabled = false;
+      }
     };
 
-    document.getElementById('btnGithubReg').onclick = () => {
-      showToast('Firebase OAuth Notice', 'GitHub sign-up integration point ready.', 'info');
-      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
-    };
+    document.getElementById('btnGoogleReg').onclick = () => handleSocialAuth('google');
+    document.getElementById('btnGithubReg').onclick = () => handleSocialAuth('github');
+
+    function showOAuthSetupModal(provider, errorMessage) {
+      const existing = document.getElementById('oauthNoticeModal');
+      if (existing) existing.remove();
+
+      const modalHtml = `
+        <div class="modal-backdrop is-open" id="oauthNoticeModal">
+          <div class="modal-dialog" style="max-width: 520px;">
+            <div class="modal-header">
+              <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="shield-alert" style="color: var(--accent-primary); width: 20px; height: 20px;"></i>
+                <span>${provider.toUpperCase()} Registration</span>
+              </h3>
+              <button type="button" class="modal-close" id="closeOAuthModalBtn" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body" style="font-size: 14px; line-height: 1.6; color: var(--text-secondary);">
+              <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; color: #fca5a5;">
+                <strong>Supabase Notice:</strong> ${errorMessage || 'Provider is not enabled'}
+              </div>
+              <p style="margin-bottom: 10px; color: var(--text-primary); font-weight: 500;">
+                To enable 1-click ${provider} signup:
+              </p>
+              <ol style="padding-left: 20px; margin-bottom: 16px;">
+                <li style="margin-bottom: 6px;">Open <a href="https://supabase.com/dashboard/project/uffxohelmzgvgsbnuuyc/auth/providers" target="_blank" style="color: var(--primary); text-decoration: underline;">Supabase Auth Providers</a>.</li>
+                <li style="margin-bottom: 6px;">Toggle <strong>${provider}</strong> to <em>Enabled</em>.</li>
+                <li style="margin-bottom: 6px;">Enter your OAuth Client ID & Secret from ${provider === 'github' ? 'GitHub Developer settings' : 'Google Cloud Console'}.</li>
+                <li>Add <code>https://revise-code.vercel.app/**</code> in URL Configuration &gt; Redirect URLs.</li>
+              </ol>
+              <div style="padding: 10px 14px; background: var(--bg-surface-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 13px;">
+                💡 <strong>Instant Alternative:</strong> You can create your account directly using the <strong>Email &amp; Password</strong> form below!
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" id="dismissOAuthModalBtn">
+                Sign up with Email &amp; Password
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+      const close = () => {
+        const m = document.getElementById('oauthNoticeModal');
+        if (m) m.remove();
+      };
+      document.getElementById('closeOAuthModalBtn').onclick = close;
+      document.getElementById('dismissOAuthModalBtn').onclick = close;
+    }
+
+    // Process incoming OAuth redirect callback hash (#access_token=... or #error=...)
+    if (window.location.hash) {
+      (async () => {
+        try {
+          const authResult = await AuthService.handleOAuthCallback();
+          if (authResult && authResult.success) {
+            showToast('Welcome!', `Account created and logged in as ${authResult.user?.name || 'User'}.`, 'success');
+            setTimeout(() => {
+              window.location.replace('dashboard.html');
+            }, 500);
+          }
+        } catch (err) {
+          console.warn('OAuth callback notice:', err);
+          const msg = err.message || '';
+          if (msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('unsupported_provider') || msg.toLowerCase().includes('validation_failed')) {
+            showOAuthSetupModal('Google / GitHub', msg);
+          } else {
+            showToast('Sign-Up Notice', msg || 'Could not complete signup. Please use email and password.', 'error', 6000);
+          }
+        }
+      })();
+    }
 
     // Registration submit
     document.getElementById('registerForm').onsubmit = async (e) => {

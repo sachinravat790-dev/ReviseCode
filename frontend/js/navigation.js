@@ -230,6 +230,19 @@ export function initNavigation() {
                        cleanFile === 'forgot-password';
 
   if (!isPublicPage && !AuthService.isAuthenticated()) {
+    // If incoming OAuth callback hash is present on a protected page, handle it before redirecting
+    if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
+      AuthService.handleOAuthCallback().then(result => {
+        if (result && result.success) {
+          window.location.reload();
+        } else {
+          window.location.replace('login.html');
+        }
+      }).catch(() => {
+        window.location.replace('login.html');
+      });
+      return;
+    }
     window.location.replace('login.html');
     return;
   }

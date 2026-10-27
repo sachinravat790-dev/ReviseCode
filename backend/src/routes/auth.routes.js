@@ -10,5 +10,6 @@ router.post('/register', validateBody(registerSchema), authController.register);
 router.post('/login', validateBody(loginSchema), authController.login);
 router.get('/me', authenticate, authController.getMe);
 router.post('/logout', authController.logout);
+router.get('/oauth-url/:provider', authController.getOAuthUrl);
 
 export default router;
