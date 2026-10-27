@@ -2099,7 +2099,7 @@ export class SupabaseRepository {
   async getStats(userId = null) {
     let qQuery = this.client
       .from('questions')
-      .select('id', { count: 'exact', head: true });
+      .select('id', { count: 'exact' });
 
     if (userId) {
       qQuery = qQuery.eq('user_id', userId);
@@ -2131,14 +2131,14 @@ export class SupabaseRepository {
           if (userId) {
             totalQuestions = 0;
           } else {
-            const { count: fbCount } = await this.client.from('questions').select('id', { count: 'exact', head: true });
-            totalQuestions = fbCount ?? 0;
+            const { data: fbData, count: fbCount } = await this.client.from('questions').select('id', { count: 'exact' });
+            totalQuestions = fbCount ?? (Array.isArray(fbData) ? fbData.length : 0);
           }
         } else {
           console.warn('Database warning: Unable to count questions:', qErr.message);
         }
       } else {
-        totalQuestions = count ?? 0;
+        totalQuestions = count ?? (Array.isArray(qResult.value.data) ? qResult.value.data.length : 0);
       }
     } else {
       console.warn('Database warning: Could not query questions count:', qResult.reason?.message);
