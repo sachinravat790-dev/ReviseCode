@@ -72,7 +72,9 @@ export async function renderDashboard() {
     const completionRateEl = document.getElementById('metricCompletionRate');
     const streakCountEl = document.getElementById('dashboardStreakCount');
 
-    if (totalQuestionsEl) totalQuestionsEl.textContent = stats.totalQuestions ?? 0;
+    const totalQuestions = stats.totalQuestions || questionsData?.pagination?.total || recentQuestions.length || 0;
+
+    if (totalQuestionsEl) totalQuestionsEl.textContent = totalQuestions;
     if (dueTodayEl) dueTodayEl.textContent = stats.dueToday ?? 0;
     if (overdueEl) overdueEl.textContent = stats.overdue ?? 0;
     if (completionRateEl) completionRateEl.textContent = `${stats.completionRate ?? 100}%`;
@@ -82,7 +84,7 @@ export async function renderDashboard() {
     renderQueue(dueMilestones);
 
     // Render Subject Progress
-    renderSubjectProgress(subjectProgress, stats.totalQuestions || 1);
+    renderSubjectProgress(subjectProgress, totalQuestions || 1);
 
     // Render Recently Added Questions
     renderRecentQuestions(recentQuestions);

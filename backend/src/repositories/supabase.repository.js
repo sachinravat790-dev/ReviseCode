@@ -2144,6 +2144,18 @@ export class SupabaseRepository {
       console.warn('Database warning: Could not query questions count:', qResult.reason?.message);
     }
 
+    // Defensive fallback: if direct count returned 0, ensure consistency with getAllQuestions
+    if (!totalQuestions) {
+      try {
+        const fallbackAll = await this.getAllQuestions({ page: 1, limit: 1, userId });
+        if (fallbackAll?.pagination?.total) {
+          totalQuestions = fallbackAll.pagination.total;
+        } else if (Array.isArray(fallbackAll?.items) && fallbackAll.items.length > 0) {
+          totalQuestions = fallbackAll.items.length;
+        }
+      } catch (_) {}
+    }
+
     let revList = [];
     if (revResult.status === 'fulfilled') {
       const { data: revisions, error: revErr } = revResult.value;
