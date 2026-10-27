@@ -411,3 +411,35 @@
   font-size: 12px;
   cursor: pointer;
 }
+
+/* Camera Capture Modal Styles */
+.camera-view-container {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  max-height: 380px;
+  background-color: #050810;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+}
+
+.camera-view-container video {
+  width: 100%;
+  height: 100%;
+  max-height: 380px;
+  object-fit: cover;
+  display: none;
+}
+
+.camera-view-container img {
+  width: 100%;
+  height: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  display: none;
+}
+

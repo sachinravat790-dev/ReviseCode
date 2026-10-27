@@ -44,10 +44,14 @@ export function showToast(title, message, type = 'info', duration = 4000) {
   const closeBtn = toast.querySelector('.toast-close');
   const dismiss = () => {
     toast.classList.add('toast-hiding');
-    setTimeout(() => toast.remove(), 300);
+    setTimeout(() => {
+      if (typeof toast.remove === 'function') toast.remove();
+    }, 300);
   };
 
-  closeBtn.addEventListener('click', dismiss);
+  if (closeBtn) {
+    closeBtn.addEventListener('click', dismiss);
+  }
   setTimeout(dismiss, duration);
 }
 

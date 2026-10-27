@@ -165,11 +165,75 @@ function setupDuplicateCheck() {
   if (numInput) numInput.addEventListener('blur', checkDup);
 }
 
+/**
+ * Compress and downscale an image file or dataURL using HTML5 canvas
+ * Keeps handwritten notes crisp while keeping upload sizes under ~300KB.
+ */
+function compressImage(fileOrDataUrl, maxWidth = 1600, maxHeight = 1600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth || height > maxHeight) {
+        if (width / height > maxWidth / maxHeight) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressedDataUrl);
+    };
+    img.onerror = () => reject(new Error('Failed to load image for compression'));
+
+    if (typeof fileOrDataUrl === 'string') {
+      img.src = fileOrDataUrl;
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => { img.src = e.target.result; };
+      reader.onerror = reject;
+      reader.readAsDataURL(fileOrDataUrl);
+    }
+  });
+}
+
 function setupAttachments() {
   const dropzone = document.getElementById('attachmentDropzone');
   const fileInput = document.getElementById('attachmentFileInput');
   const previewList = document.getElementById('attachmentPreviewList');
-  const cameraBtn = document.getElementById('mockCameraBtn');
+  const cameraBtn = document.getElementById('cameraCaptureBtn') || document.getElementById('mockCameraBtn');
+
+  // Camera modal elements
+  const cameraModal = document.getElementById('cameraModal');
+  const cameraCloseBtn = document.getElementById('cameraModalClose');
+  const cameraVideo = document.getElementById('cameraVideo');
+  const cameraCapturedImg = document.getElementById('cameraCapturedImg');
+  const cameraStatusBox = document.getElementById('cameraStatusBox');
+  const cameraStatusSpinner = document.getElementById('cameraStatusSpinner');
+  const cameraStatusText = document.getElementById('cameraStatusText');
+  const cameraCanvas = document.getElementById('cameraCanvas');
+  const nativeCameraInput = document.getElementById('nativeCameraInput');
+  const nativeCameraBtn = document.getElementById('nativeCameraBtn');
+  const flipCameraBtn = document.getElementById('flipCameraBtn');
+  const snapPhotoBtn = document.getElementById('snapPhotoBtn');
+  const retakePhotoBtn = document.getElementById('retakePhotoBtn');
+  const attachPhotoBtn = document.getElementById('attachPhotoBtn');
+  const cameraLiveControls = document.getElementById('cameraLiveControls');
+  const cameraReviewControls = document.getElementById('cameraReviewControls');
+
+  let activeStream = null;
+  let currentFacingMode = 'environment'; // default to rear camera for notes
+  let capturedDataUrl = null;
 
   if (dropzone && fileInput) {
     dropzone.onclick = () => fileInput.click();
@@ -198,66 +262,281 @@ function setupAttachments() {
     };
   }
 
-  // Camera mock simulation button
-  if (cameraBtn) {
-    cameraBtn.onclick = () => {
-      const sampleCanvas = document.createElement('canvas');
-      sampleCanvas.width = 400;
-      sampleCanvas.height = 300;
-      const ctx = sampleCanvas.getContext('2d');
-      ctx.fillStyle = '#1e1b4b';
-      ctx.fillRect(0, 0, 400, 300);
-      ctx.fillStyle = '#a78bfa';
-      ctx.font = '20px sans-serif';
-      ctx.fillText('Handwritten Solution Notes', 40, 100);
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = '14px monospace';
-      ctx.fillText('• Binary Exponentiation', 40, 150);
-      ctx.fillText('• Time: O(log n), Space: O(1)', 40, 180);
-      ctx.fillText('• Edge case: n = INT_MIN', 40, 210);
-
-      const dataUrl = sampleCanvas.toDataURL('image/png');
-      currentAttachments.push({
-        id: 'att_' + Date.now(),
-        name: 'Camera_Handwritten_Notes.png',
-        url: dataUrl,
-        size: '142 KB'
+  // Real Camera Hardware Controller
+  function stopCameraStream() {
+    if (activeStream) {
+      activeStream.getTracks().forEach(track => {
+        try { track.stop(); } catch (_) {}
       });
-      renderAttachmentsList();
-      showToast('Camera Capture', 'Handwritten solution note attached.', 'success');
+      activeStream = null;
+    }
+    if (cameraVideo) {
+      cameraVideo.srcObject = null;
+    }
+  }
+
+  function closeCameraModal() {
+    stopCameraStream();
+    if (cameraModal) {
+      cameraModal.classList.remove('is-open');
+    }
+    capturedDataUrl = null;
+  }
+
+  async function startCameraStream() {
+    stopCameraStream();
+
+    if (!cameraVideo) return;
+
+    if (cameraStatusBox) cameraStatusBox.style.display = 'block';
+    if (cameraStatusSpinner) cameraStatusSpinner.style.display = 'block';
+    if (cameraStatusText) cameraStatusText.textContent = 'Requesting camera access...';
+    if (cameraVideo) cameraVideo.style.display = 'none';
+    if (cameraCapturedImg) cameraCapturedImg.style.display = 'none';
+    if (snapPhotoBtn) snapPhotoBtn.disabled = true;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (cameraStatusSpinner) cameraStatusSpinner.style.display = 'none';
+      if (cameraStatusText) {
+        cameraStatusText.innerHTML = 'Live camera stream is not supported by your browser.<br>Please click <strong>Phone Camera / File</strong> below to capture or select a photo.';
+      }
+      return;
+    }
+
+    try {
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: currentFacingMode },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+      } catch (idealErr) {
+        // Fallback constraint if specific facingMode/resolution is rejected
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
+      activeStream = stream;
+      cameraVideo.srcObject = stream;
+      await cameraVideo.play().catch(() => {});
+
+      if (cameraStatusBox) cameraStatusBox.style.display = 'none';
+      cameraVideo.style.display = 'block';
+      if (snapPhotoBtn) snapPhotoBtn.disabled = false;
+
+      // Detect if device has multiple cameras (front + rear)
+      if (navigator.mediaDevices.enumerateDevices && flipCameraBtn) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoInputs = devices.filter(d => d.kind === 'videoinput');
+          flipCameraBtn.style.display = videoInputs.length > 1 ? 'inline-flex' : 'none';
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.warn('Camera stream error:', err);
+      if (cameraStatusSpinner) cameraStatusSpinner.style.display = 'none';
+      if (cameraStatusText) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          cameraStatusText.innerHTML = 'Camera permission was denied.<br>Please allow camera access in browser permissions, or use <strong>Phone Camera / File</strong> below.';
+        } else {
+          cameraStatusText.innerHTML = `Unable to access camera (${err.name || 'Error'}).<br>Please use <strong>Phone Camera / File</strong> below to snap a photo.`;
+        }
+      }
+    }
+  }
+
+  function openCameraModal() {
+    if (!cameraModal) {
+      if (nativeCameraInput) nativeCameraInput.click();
+      return;
+    }
+
+    cameraModal.classList.add('is-open');
+
+    if (cameraLiveControls) cameraLiveControls.style.display = 'flex';
+    if (cameraReviewControls) cameraReviewControls.style.display = 'none';
+    if (cameraCapturedImg) {
+      cameraCapturedImg.src = '';
+      cameraCapturedImg.style.display = 'none';
+    }
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+
+    startCameraStream();
+  }
+
+  if (cameraBtn) {
+    cameraBtn.onclick = (e) => {
+      e.preventDefault();
+      openCameraModal();
     };
   }
 
-  function handleFiles(files) {
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+  if (cameraCloseBtn) {
+    cameraCloseBtn.onclick = () => closeCameraModal();
+  }
+
+  if (cameraModal) {
+    cameraModal.addEventListener('click', (e) => {
+      if (e.target === cameraModal) {
+        closeCameraModal();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && cameraModal && cameraModal.classList.contains('is-open')) {
+      closeCameraModal();
+    }
+  });
+
+  if (flipCameraBtn) {
+    flipCameraBtn.onclick = () => {
+      currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+      startCameraStream();
+    };
+  }
+
+  if (snapPhotoBtn) {
+    snapPhotoBtn.onclick = () => {
+      if (!cameraVideo || !activeStream) return;
+
+      const w = cameraVideo.videoWidth || 1280;
+      const h = cameraVideo.videoHeight || 720;
+      const canvas = cameraCanvas || document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(cameraVideo, 0, 0, w, h);
+
+      capturedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      if (cameraCapturedImg) {
+        cameraCapturedImg.src = capturedDataUrl;
+        cameraCapturedImg.style.display = 'block';
+      }
+      cameraVideo.style.display = 'none';
+
+      if (cameraLiveControls) cameraLiveControls.style.display = 'none';
+      if (cameraReviewControls) cameraReviewControls.style.display = 'flex';
+    };
+  }
+
+  if (retakePhotoBtn) {
+    retakePhotoBtn.onclick = () => {
+      capturedDataUrl = null;
+      if (cameraCapturedImg) {
+        cameraCapturedImg.src = '';
+        cameraCapturedImg.style.display = 'none';
+      }
+      if (cameraVideo) {
+        cameraVideo.style.display = 'block';
+      }
+      if (cameraLiveControls) cameraLiveControls.style.display = 'flex';
+      if (cameraReviewControls) cameraReviewControls.style.display = 'none';
+    };
+  }
+
+  if (attachPhotoBtn) {
+    attachPhotoBtn.onclick = () => {
+      if (!capturedDataUrl) return;
+
+      const approxBytes = Math.round((capturedDataUrl.length * 3) / 4);
+      const sizeKb = Math.round(approxBytes / 1024);
+      const filename = `Handwritten_Note_${new Date().toISOString().slice(0, 10)}_${Date.now().toString().slice(-4)}.jpg`;
+
+      currentAttachments.push({
+        id: 'att_' + Date.now(),
+        name: filename,
+        url: capturedDataUrl,
+        size: `${sizeKb} KB`
+      });
+
+      renderAttachmentsList();
+      closeCameraModal();
+      showToast('Camera Capture', 'Handwritten note photo attached.', 'success');
+    };
+  }
+
+  // Device native camera app or file chooser trigger
+  if (nativeCameraBtn && nativeCameraInput) {
+    nativeCameraBtn.onclick = () => nativeCameraInput.click();
+  }
+
+  if (nativeCameraInput) {
+    nativeCameraInput.onchange = async () => {
+      if (!nativeCameraInput.files || nativeCameraInput.files.length === 0) return;
+      const file = nativeCameraInput.files[0];
+      try {
+        const compressedUrl = await compressImage(file, 1600, 1600, 0.85);
+        const approxBytes = Math.round((compressedUrl.length * 3) / 4);
+        const sizeKb = Math.round(approxBytes / 1024);
+
         currentAttachments.push({
           id: 'att_' + Date.now(),
-          name: file.name,
-          url: e.target.result,
-          size: `${Math.round(file.size / 1024)} KB`
+          name: file.name || `Camera_Photo_${Date.now().toString().slice(-4)}.jpg`,
+          url: compressedUrl,
+          size: `${sizeKb} KB`
         });
+
         renderAttachmentsList();
-      };
+        closeCameraModal();
+        showToast('Photo Attached', 'Handwritten note attached successfully.', 'success');
+      } catch (err) {
+        console.error('Error processing photo:', err);
+        showToast('Error', 'Could not process photo file.', 'error');
+      }
+      nativeCameraInput.value = '';
+    };
+  }
+
+  async function handleFiles(files) {
+    for (const file of Array.from(files)) {
       if (file.type.startsWith('image/')) {
-        reader.readAsDataURL(file);
+        try {
+          const compressedUrl = await compressImage(file, 1600, 1600, 0.85);
+          const approxBytes = Math.round((compressedUrl.length * 3) / 4);
+          currentAttachments.push({
+            id: 'att_' + Date.now() + Math.random().toString(36).substring(2, 6),
+            name: file.name,
+            url: compressedUrl,
+            size: `${Math.round(approxBytes / 1024)} KB`
+          });
+          renderAttachmentsList();
+        } catch (err) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            currentAttachments.push({
+              id: 'att_' + Date.now(),
+              name: file.name,
+              url: e.target.result,
+              size: `${Math.round(file.size / 1024)} KB`
+            });
+            renderAttachmentsList();
+          };
+          reader.readAsDataURL(file);
+        }
       } else {
         currentAttachments.push({
-          id: 'att_' + Date.now(),
+          id: 'att_' + Date.now() + Math.random().toString(36).substring(2, 6),
           name: file.name,
           url: 'https://via.placeholder.com/300x200/1e293b/ffffff?text=' + encodeURIComponent(file.name),
           size: `${Math.round(file.size / 1024)} KB`
         });
         renderAttachmentsList();
       }
-    });
+    }
   }
 
   function renderAttachmentsList() {
     if (!previewList) return;
     previewList.innerHTML = currentAttachments.map((att, idx) => `
-      <div class="uploaded-preview-item">
+      <div class="uploaded-preview-item" title="${att.name}">
         <img src="${att.url}" alt="${att.name}">
         <button type="button" class="remove-upload-btn" data-index="${idx}" title="Remove attachment">&times;</button>
       </div>

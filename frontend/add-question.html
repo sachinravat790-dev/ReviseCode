@@ -277,7 +277,7 @@
                   <h3 class="card-title">3. Attachments & Handwritten Notes</h3>
                   <p class="card-subtitle">Upload whiteboard photos, iPad sketches, or screenshots</p>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" id="mockCameraBtn">
+                <button type="button" class="btn btn-secondary btn-sm" id="cameraCaptureBtn">
                   <i data-lucide="camera"></i> Camera Capture
                 </button>
               </div>
@@ -327,9 +327,63 @@
     </div>
   </div>
 
+  <!-- Camera Capture Modal -->
+  <div class="modal-backdrop" id="cameraModal">
+    <div class="modal-dialog" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="camera" style="color: var(--accent-primary); width: 20px; height: 20px;"></i>
+          <span>Camera Capture</span>
+        </h3>
+        <button type="button" class="modal-close" id="cameraModalClose" aria-label="Close modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: var(--space-md);">
+        <div class="camera-view-container">
+          <!-- Live Video Stream -->
+          <video id="cameraVideo" autoplay playsinline muted></video>
+          <!-- Captured Photo Preview -->
+          <img id="cameraCapturedImg" alt="Captured handwritten note">
+          <!-- Camera Status / Error Banner -->
+          <div id="cameraStatusBox" style="padding: 24px; text-align: center; color: var(--text-secondary);">
+            <div id="cameraStatusSpinner" class="spinner" style="margin: 0 auto 12px; width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.15); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <p id="cameraStatusText" style="font-size: 14px; margin: 0;">Starting camera...</p>
+          </div>
+          <!-- Hidden Canvas for frame extraction -->
+          <canvas id="cameraCanvas" style="display: none;"></canvas>
+        </div>
+
+        <!-- Hidden Native File Input (Direct Camera on mobile, file picker fallback) -->
+        <input type="file" id="nativeCameraInput" accept="image/*" capture="environment" style="display: none;">
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="nativeCameraBtn" title="Take photo with phone camera app or pick an existing image">
+          <i data-lucide="image"></i> Phone Camera / File
+        </button>
+        <div id="cameraLiveControls" style="display: flex; gap: 8px; align-items: center;">
+          <button type="button" class="btn btn-secondary btn-sm" id="flipCameraBtn" style="display: none;" title="Switch Camera">
+            <i data-lucide="refresh-cw"></i> Flip
+          </button>
+          <button type="button" class="btn btn-primary" id="snapPhotoBtn">
+            <i data-lucide="camera"></i> Snap Photo
+          </button>
+        </div>
+        <div id="cameraReviewControls" style="display: none; gap: 8px; align-items: center;">
+          <button type="button" class="btn btn-secondary" id="retakePhotoBtn">
+            <i data-lucide="refresh-cw"></i> Retake
+          </button>
+          <button type="button" class="btn btn-primary" id="attachPhotoBtn">
+            <i data-lucide="check"></i> Attach Photo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script type="module" src="js/theme.js"></script>
   <script type="module" src="js/navigation.js"></script>
-  <script type="module" src="js/add-question.js"></script>
+  <script type="module" src="js/add-question.js?v=2.2"></script>
 </body>
 </html>
