@@ -64,6 +64,11 @@ export function isWithinQuietHours(currentTime, quietStart = '22:00', quietEnd =
   const start = String(quietStart).trim();
   const end = String(quietEnd).trim();
 
+  // Full-day quiet hours edge cases (00:00 to 23:59 or 24:00)
+  if (start === '00:00' && (end === '23:59' || end === '24:00')) {
+    return true;
+  }
+
   if (start < end) {
     // Normal same-day window (e.g. 01:00 to 06:00)
     return current >= start && current < end;

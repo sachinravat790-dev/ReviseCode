@@ -36,7 +36,13 @@ export const questionsController = {
 
   async createQuestion(req, res, next) {
     try {
-      const created = await questionsService.createQuestion({ ...req.body, userId: req.user?.id });
+      if (!req.user || !req.user.id) {
+        return errorResponse(res, {
+          statusCode: 401,
+          message: 'Authentication required. Please sign in to create questions.'
+        });
+      }
+      const created = await questionsService.createQuestion({ ...req.body, userId: req.user.id });
       return successResponse(res, {
         statusCode: 201,
         message: 'Question created successfully and revision milestones scheduled',

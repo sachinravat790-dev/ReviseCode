@@ -174,3 +174,231 @@ test('DELETE /api/questions/:id removes question and cascades milestone deletion
   const remainingMilestones = db.revisions.filter(r => r.question_id === 'q_lc_50');
   assert.equal(remainingMilestones.length, 0);
 });
+
+test('POST /api/questions with authenticated user token associates user_id with question and scheduled milestones', async () => {
+  const { authService } = await import('../src/services/auth.service.js');
+  const user = { id: 'usr_rls_test_1', email: 'rls_user@example.com', name: 'RLS User' };
+  const token = authService.generateToken(user);
+
+  const res = await request(app, {
+    method: 'POST',
+    url: '/api/questions',
+    headers: { Authorization: `Bearer ${token}` },
+    body: {
+      title: 'Trapping Rain Water',
+      platform: 'LeetCode',
+      problemNumber: '42',
+      difficulty: 'Hard',
+      subjectId: 'sub_dsa'
+    }
+  });
+
+  assert.equal(res.status, 201);
+  assert.equal(res.body.success, true);
+  assert.equal(res.body.data.user_id, 'usr_rls_test_1');
+
+  // Verify scheduled milestones also inherit user_id
+  const db = getTestDatabase();
+  const userMilestones = db.revisions.filter(r => r.question_id === res.body.data.id);
+  assert.equal(userMilestones.length, 5);
+  userMilestones.forEach(m => {
+    assert.equal(m.user_id, 'usr_rls_test_1');
+  });
+});
+
+test('POST /api/questions rejects unauthenticated requests when strict authentication is enforced', async () => {
+  const res = await request(app, {
+    method: 'POST',
+    url: '/api/questions',
+    headers: { 'x-strict-auth': 'true' },
+    body: {
+      title: 'Subsets',
+      platform: 'LeetCode',
+      problemNumber: '78',
+      difficulty: 'Medium'
+    }
+  });
+
+  assert.equal(res.status, 401);
+  assert.equal(res.body.success, false);
+});
+
+test('Cross-user question protection: User B cannot read, update, or delete User A question', async () => {
+  const { authService } = await import('../src/services/auth.service.js');
+  const userA = { id: 'user_owner_a', email: 'owner_a@example.com', name: 'Owner A' };
+  const userB = { id: 'user_attacker_b', email: 'attacker_b@example.com', name: 'User B' };
+  const tokenA = authService.generateToken(userA);
+  const tokenB = authService.generateToken(userB);
+
+  // User A creates a question
+  const createRes = await request(app, {
+    method: 'POST',
+    url: '/api/questions',
+    headers: { Authorization: `Bearer ${tokenA}` },
+    body: {
+      title: 'Valid Palindrome',
+      platform: 'LeetCode',
+      problemNumber: '125',
+      difficulty: 'Easy'
+    }
+  });
+  assert.equal(createRes.status, 201);
+  const qId = createRes.body.data.id;
+
+  // User B attempts to read User A question -> 404
+  const getRes = await request(app, {
+    method: 'GET',
+    url: `/api/questions/${qId}`,
+    headers: { Authorization: `Bearer ${tokenB}` }
+  });
+  assert.equal(getRes.status, 404);
+
+  // User B attempts to update User A question -> 404
+  const putRes = await request(app, {
+    method: 'PUT',
+    url: `/api/questions/${qId}`,
+    headers: { Authorization: `Bearer ${tokenB}` },
+    body: { notes: 'Malicious modification attempt' }
+  });
+  assert.equal(putRes.status, 404);
+
+  // User B attempts to delete User A question -> 404
+  const delRes = await request(app, {
+    method: 'DELETE',
+    url: `/api/questions/${qId}`,
+    headers: { Authorization: `Bearer ${tokenB}` }
+  });
+  assert.equal(delRes.status, 404);
+
+  // User A can still retrieve their own question
+  const verifyRes = await request(app, {
+    method: 'GET',
+    url: `/api/questions/${qId}`,
+    headers: { Authorization: `Bearer ${tokenA}` }
+  });
+  assert.equal(verifyRes.status, 200);
+  assert.equal(verifyRes.body.data.title, 'Valid Palindrome');
+});
+
+test('Supabase Configuration: getSupabaseKeyRole detects anon vs service_role tokens and flags anon key', async () => {
+  const { getSupabaseKeyRole, validateSupabaseConfig, config } = await import('../src/config/env.js');
+
+  // Mock JWTs
+  const makeJwt = role => {
+    const h = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const p = Buffer.from(JSON.stringify({ role, iss: 'supabase' })).toString('base64url');
+    return `${h}.${p}.dummy_signature`;
+  };
+
+  const anonToken = makeJwt('anon');
+  const serviceRoleToken = makeJwt('service_role');
+
+  assert.equal(getSupabaseKeyRole(anonToken), 'anon');
+  assert.equal(getSupabaseKeyRole(serviceRoleToken), 'service_role');
+  assert.equal(getSupabaseKeyRole('not_a_jwt'), null);
+
+  // Test validation error when anon key is provided as service role key
+  const prevKey = config.supabaseServiceRoleKey;
+  const prevUrl = config.supabaseUrl;
+  try {
+    config.supabaseUrl = 'https://mock-proj.supabase.co';
+    config.supabaseServiceRoleKey = anonToken;
+    const result = validateSupabaseConfig();
+    assert.equal(result.valid, false);
+    assert.equal(result.isAnonKeySupplied, true);
+    assert.match(result.message, /SUPABASE_SERVICE_ROLE_KEY is set to the Supabase ANON/);
+  } finally {
+    config.supabaseServiceRoleKey = prevKey;
+    config.supabaseUrl = prevUrl;
+  }
+});
+
+test('User isolation on revisions: User B cannot access or complete User A scheduled revision milestones', async () => {
+  const { authService } = await import('../src/services/auth.service.js');
+  const userA = { id: 'usr_owner_rev_a', email: 'owner_rev@example.com', name: 'Owner Rev' };
+  const userB = { id: 'usr_intruder_rev_b', email: 'intruder_rev@example.com', name: 'Intruder Rev' };
+  const tokenA = authService.generateToken(userA);
+  const tokenB = authService.generateToken(userB);
+
+  // User A creates a question (which creates 5 milestones)
+  const createRes = await request(app, {
+    method: 'POST',
+    url: '/api/questions',
+    headers: { Authorization: `Bearer ${tokenA}` },
+    body: {
+      title: 'Course Schedule',
+      platform: 'LeetCode',
+      problemNumber: '207',
+      difficulty: 'Medium'
+    }
+  });
+  assert.equal(createRes.status, 201);
+  const questionId = createRes.body.data.id;
+
+  const db = getTestDatabase();
+  const aMilestones = db.revisions.filter(r => r.question_id === questionId);
+  assert.equal(aMilestones.length, 5);
+  const milestoneToAttack = aMilestones[0];
+
+  // User B lists revisions -> User A's milestone must NOT appear in User B's list
+  const listRes = await request(app, {
+    method: 'GET',
+    url: '/api/revisions',
+    headers: { Authorization: `Bearer ${tokenB}` }
+  });
+  assert.equal(listRes.status, 200);
+  const bVisibleIds = listRes.body.data.map(m => m.id);
+  assert.ok(!bVisibleIds.includes(milestoneToAttack.id));
+
+  // User B attempts to complete User A's milestone -> must be rejected with 404
+  const completeRes = await request(app, {
+    method: 'POST',
+    url: `/api/revisions/${milestoneToAttack.id}/complete`,
+    headers: { Authorization: `Bearer ${tokenB}` },
+    body: { recallRating: 'easy', notes: 'Unauthorized completion attempt' }
+  });
+  assert.equal(completeRes.status, 404);
+
+  // User A successfully completes their own milestone
+  const ownerCompleteRes = await request(app, {
+    method: 'POST',
+    url: `/api/revisions/${milestoneToAttack.id}/complete`,
+    headers: { Authorization: `Bearer ${tokenA}` },
+    body: { recallRating: 'easy', notes: 'Completed by real owner' }
+  });
+  assert.equal(ownerCompleteRes.status, 200);
+  assert.equal(ownerCompleteRes.body.data.status, 'completed');
+});
+
+test('Supabase Configuration: validateSupabaseConfig safely reports missing URL or key without leaking secrets', async () => {
+  const { validateSupabaseConfig, config } = await import('../src/config/env.js');
+
+  const prevKey = config.supabaseServiceRoleKey;
+  const prevUrl = config.supabaseUrl;
+
+  try {
+    // Missing URL
+    config.supabaseUrl = '';
+    config.supabaseServiceRoleKey = 'some_key';
+    const missingUrlRes = validateSupabaseConfig();
+    assert.equal(missingUrlRes.valid, false);
+    assert.ok(missingUrlRes.missing.includes('SUPABASE_URL'));
+
+    // Missing Key
+    config.supabaseUrl = 'https://valid-url.supabase.co';
+    config.supabaseServiceRoleKey = '';
+    const missingKeyRes = validateSupabaseConfig();
+    assert.equal(missingKeyRes.valid, false);
+    assert.ok(missingKeyRes.missing.includes('SUPABASE_SERVICE_ROLE_KEY'));
+
+    // Invalid URL protocol
+    config.supabaseUrl = 'ftp://invalid-url.supabase.co';
+    config.supabaseServiceRoleKey = 'some_key';
+    const invalidUrlRes = validateSupabaseConfig();
+    assert.equal(invalidUrlRes.valid, false);
+    assert.match(invalidUrlRes.message, /valid HTTP\/HTTPS URL/);
+  } finally {
+    config.supabaseServiceRoleKey = prevKey;
+    config.supabaseUrl = prevUrl;
+  }
+});

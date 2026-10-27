@@ -167,6 +167,24 @@ export function maskSensitive(str, visibleStart = 4, visibleEnd = 3) {
 }
 
 /**
+ * Inspects the token role of a Supabase JWT (e.g. 'anon' vs 'service_role')
+ * without verifying signature or logging secret values.
+ */
+export function getSupabaseKeyRole(key) {
+  if (!key || typeof key !== 'string') return null;
+  try {
+    const parts = key.trim().split('.');
+    if (parts.length === 3) {
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+      return payload.role || null;
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
+}
+
+/**
  * Validates Supabase configuration for runtime startup.
  * Never logs or reveals secret keys.
  */
@@ -180,6 +198,17 @@ export function validateSupabaseConfig() {
       valid: false,
       missing,
       message: `[Supabase Configuration Error] Missing required environment variable(s): ${missing.join(', ')}. Please configure them in backend/.env`
+    };
+  }
+
+  // Detect accidental use of anon (public) key in place of service_role (secret) key
+  const detectedRole = getSupabaseKeyRole(config.supabaseServiceRoleKey);
+  if (detectedRole === 'anon') {
+    return {
+      valid: false,
+      missing: ['SUPABASE_SERVICE_ROLE_KEY'],
+      isAnonKeySupplied: true,
+      message: '[Supabase Configuration Error] SUPABASE_SERVICE_ROLE_KEY is set to the Supabase ANON (public) key instead of the SERVICE_ROLE (secret) key. When using the anon key, PostgreSQL Row Level Security (RLS) blocks database writes with "new row violates row-level security policy". Please replace it in your Render environment variables or backend/.env with your Supabase service_role secret key from Project Settings -> API.'
     };
   }
 

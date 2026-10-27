@@ -63,6 +63,8 @@ export function mapQuestionFromDb(row, subjectName = null, milestones = []) {
 
   return {
     id: row.id,
+    userId: row.user_id || row.userId || null,
+    user_id: row.user_id || row.userId || null,
     title: row.title,
     platform: row.platform,
     problemNumber: row.problem_number ?? '',
@@ -883,9 +885,10 @@ export class SupabaseRepository {
 
     if (error) {
       if (isSchemaOrColumnError(error)) {
-        console.warn('Database warning: questions table lacks extended columns or user_id. Inserting base columns.');
+        console.warn('Database warning: questions table lacks extended columns. Inserting base columns with user_id.');
         const baseRow = {
           id: questionId,
+          user_id: userId,
           title: data.title.trim(),
           platform: data.platform.trim(),
           problem_number: parseProblemNumber(data.problemNumber),
@@ -900,11 +903,24 @@ export class SupabaseRepository {
           created_at: nowIso,
           updated_at: nowIso
         };
-        const { data: baseCreated, error: baseErr } = await this.client
+        let { data: baseCreated, error: baseErr } = await this.client
           .from('questions')
           .insert(baseRow)
           .select('*, subjects(id, name)')
           .single();
+
+        // If user_id column specifically does not exist in legacy unmigrated schema
+        if (baseErr && (baseErr.code === '42703' || isMissingColumnError(baseErr))) {
+          const { user_id: _uid, ...legacyRow } = baseRow;
+          const { data: legacyCreated, error: legacyErr } = await this.client
+            .from('questions')
+            .insert(legacyRow)
+            .select('*, subjects(id, name)')
+            .single();
+          if (legacyErr) throw new Error(`Failed to insert question: ${legacyErr.message}`);
+          baseCreated = legacyCreated;
+          baseErr = null;
+        }
 
         if (baseErr) throw new Error(`Failed to insert question: ${baseErr.message}`);
         createdRecord = baseCreated;
