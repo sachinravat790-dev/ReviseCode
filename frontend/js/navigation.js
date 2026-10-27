@@ -314,10 +314,17 @@ export function initNavigation() {
     const storedProfile = StorageManager.getProfile();
     const fullName = userSession?.name || storedProfile?.name || 'Learner';
     const role = storedProfile?.role || 'Learner';
-    const initials = userSession?.avatar || storedProfile?.avatar || fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
+    const avatarData = storedProfile?.avatar || userSession?.avatar || '';
+    const initials = (userSession?.avatar && userSession.avatar.length <= 3) 
+      ? userSession.avatar 
+      : (fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U');
 
     document.querySelectorAll('.sidebar-footer .user-avatar, #userProfileMenuBtn').forEach(el => {
-      el.textContent = initials;
+      if (avatarData && (avatarData.startsWith('data:image') || avatarData.startsWith('http'))) {
+        el.innerHTML = `<img src="${avatarData}" alt="${fullName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+      } else {
+        el.textContent = initials;
+      }
     });
 
     const sidebarName = document.querySelector('.sidebar-footer .user-name');
