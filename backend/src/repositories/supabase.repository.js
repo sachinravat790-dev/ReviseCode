@@ -167,6 +167,7 @@ export function mapSettingsFromDb(row) {
       whatsappNotifications: false,
       whatsappPhone: '',
       phoneNumber: '',
+      whatsappApiKey: '',
       quietHoursStart: '22:00',
       quietHoursEnd: '08:00',
       aiDemoMode: true
@@ -187,6 +188,7 @@ export function mapSettingsFromDb(row) {
     whatsappNotifications: wa,
     whatsappPhone: phone,
     phoneNumber: phone,
+    whatsappApiKey: row.whatsapp_api_key || '',
     quietHoursStart: row.quiet_hours_start || '22:00',
     quietHoursEnd: row.quiet_hours_end || '08:00',
     aiDemoMode: Boolean(row.ai_demo_mode)
@@ -2046,6 +2048,7 @@ export class SupabaseRepository {
     if (waVal !== undefined) payload.whatsapp_notifications = waVal;
     const phoneVal = updates.whatsappPhone ?? updates.whatsapp_phone ?? updates.phoneNumber;
     if (phoneVal !== undefined) payload.whatsapp_phone = phoneVal;
+    if (updates.whatsappApiKey !== undefined) payload.whatsapp_api_key = updates.whatsappApiKey;
     if (updates.quietHoursStart !== undefined) payload.quiet_hours_start = updates.quietHoursStart;
     if (updates.quietHoursEnd !== undefined) payload.quiet_hours_end = updates.quietHoursEnd;
     if (updates.aiDemoMode !== undefined) payload.ai_demo_mode = updates.aiDemoMode;
@@ -2071,7 +2074,7 @@ export class SupabaseRepository {
 
       if (error) {
         if (error.code === '42703' || isMissingColumnError(error)) {
-          const { user_id, whatsapp_phone, ...basePayload } = payload;
+          const { user_id, whatsapp_phone, whatsapp_api_key, ...basePayload } = payload;
           const { data: fbData, error: fbErr } = await this.client
             .from('user_settings')
             .upsert(basePayload)

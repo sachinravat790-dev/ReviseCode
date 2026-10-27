@@ -47,7 +47,9 @@ export async function initNotifications() {
   if (testWaBtn) {
     testWaBtn.onclick = async () => {
       const phoneInput = document.getElementById('prefWhatsAppPhone');
+      const apiKeyInput = document.getElementById('prefWhatsAppApiKey');
       const phoneVal = phoneInput ? phoneInput.value.trim() : '';
+      const apiKeyValue = apiKeyInput ? apiKeyInput.value.trim() : '';
 
       if (!phoneVal) {
         showToast('WhatsApp Test', 'Please enter your phone number with country code first (e.g. +91 9876543210).', 'error');
@@ -61,12 +63,13 @@ export async function initNotifications() {
       if (testWaFeedback) {
         testWaFeedback.style.display = 'block';
         testWaFeedback.style.color = 'var(--text-secondary)';
-        testWaFeedback.innerHTML = 'Connecting to WhatsApp Business Platform...';
+        testWaFeedback.innerHTML = 'Connecting to WhatsApp service...';
       }
 
       try {
         const res = await api.post('/whatsapp/test', {
           recipientPhone: phoneVal,
+          apiKey: apiKeyValue,
           customText: '👋 *ReviseCode Notification Test*\n\nThis is a verified test from ReviseCode! Your automated spaced-repetition reminders (Day 3, 7, 12, 20, 30) are connected.'
         });
 
@@ -74,13 +77,13 @@ export async function initNotifications() {
         if (isSimulated) {
           if (testWaFeedback) {
             testWaFeedback.style.color = 'var(--color-warning, #d29922)';
-            testWaFeedback.innerHTML = '⚠️ <strong>Simulated in Test Mode:</strong> Backend test simulated successfully. To receive live WhatsApp messages, configure Meta Cloud API credentials in environment variables.';
+            testWaFeedback.innerHTML = '⚠️ <strong>Simulated in Test Mode:</strong> To receive live WhatsApp messages on your real phone, enter your Free CallMeBot API key above or configure Meta Cloud API.';
           }
           showToast('WhatsApp Test', 'Test simulated in backend logs (Test Mode active).', 'info');
         } else {
           if (testWaFeedback) {
             testWaFeedback.style.color = 'var(--color-success, #238636)';
-            testWaFeedback.innerHTML = '✅ <strong>Message Delivered:</strong> WhatsApp notification dispatched via Meta Cloud API! Check your phone.';
+            testWaFeedback.innerHTML = '✅ <strong>Message Delivered:</strong> WhatsApp notification dispatched to your phone! Please check your WhatsApp.';
           }
           showToast('WhatsApp Test', 'Test message sent successfully to your WhatsApp!', 'success');
         }
@@ -105,11 +108,13 @@ export async function initNotifications() {
       e.preventDefault();
       try {
         const phoneInput = document.getElementById('prefWhatsAppPhone');
+        const apiKeyInput = document.getElementById('prefWhatsAppApiKey');
         await api.put('/settings', {
           inAppNotifications: document.getElementById('prefInApp').checked,
           emailNotifications: document.getElementById('prefEmail').checked,
           whatsAppNotifications: document.getElementById('prefWhatsApp').checked,
           whatsappPhone: phoneInput ? phoneInput.value.trim() : '',
+          whatsappApiKey: apiKeyInput ? apiKeyInput.value.trim() : '',
           reminderTime: document.getElementById('prefReminderTime').value,
           quietHoursStart: document.getElementById('prefQuietStart').value,
           quietHoursEnd: document.getElementById('prefQuietEnd').value
@@ -130,6 +135,7 @@ async function loadSettingsPreferences() {
     if (document.getElementById('prefEmail')) document.getElementById('prefEmail').checked = settings.emailNotifications !== false;
     if (document.getElementById('prefWhatsApp')) document.getElementById('prefWhatsApp').checked = settings.whatsAppNotifications === true;
     if (document.getElementById('prefWhatsAppPhone')) document.getElementById('prefWhatsAppPhone').value = settings.whatsappPhone || settings.phoneNumber || '';
+    if (document.getElementById('prefWhatsAppApiKey')) document.getElementById('prefWhatsAppApiKey').value = settings.whatsappApiKey || '';
     if (document.getElementById('prefReminderTime')) document.getElementById('prefReminderTime').value = settings.reminderTime || '09:00';
     if (document.getElementById('prefQuietStart')) document.getElementById('prefQuietStart').value = settings.quietHoursStart || '22:00';
     if (document.getElementById('prefQuietEnd')) document.getElementById('prefQuietEnd').value = settings.quietHoursEnd || '08:00';

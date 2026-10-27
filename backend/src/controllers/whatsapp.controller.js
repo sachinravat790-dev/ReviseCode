@@ -31,10 +31,11 @@ export const whatsappController = {
    */
   async sendTestMessage(req, res, next) {
     try {
-      const { recipientPhone, customText } = req.body || {};
+      const { recipientPhone, customText, apiKey } = req.body || {};
       const result = await whatsappService.sendTestNotification({
         recipientPhone,
-        customText
+        customText,
+        apiKey
       });
 
       if (!result.success) {

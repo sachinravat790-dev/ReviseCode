@@ -66,6 +66,7 @@ export const config = {
   whatsappTestMode: process.env.WHATSAPP_TEST_MODE !== 'false', // Defaults to true for safety
   whatsappTemplateName: process.env.WHATSAPP_TEMPLATE_NAME || '',
   whatsappTemplateLang: process.env.WHATSAPP_TEMPLATE_LANG || 'en_US',
+  callmebotApiKey: process.env.CALLMEBOT_API_KEY || process.env.WHATSAPP_API_KEY || '',
 
   // Google Gemini API Configuration (Dynamic getter with disk sync)
   _geminiApiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
@@ -93,7 +94,9 @@ export function isSupabaseConfigured() {
  * Returns true if WhatsApp Cloud API credentials are provided.
  */
 export function isWhatsAppConfigured() {
-  return Boolean(config.whatsappApiToken && config.whatsappPhoneNumberId && config.whatsappRecipientPhoneNumber);
+  const hasMeta = Boolean(config.whatsappApiToken && config.whatsappPhoneNumberId && config.whatsappRecipientPhoneNumber);
+  const hasCallMeBot = Boolean(config.callmebotApiKey && config.whatsappRecipientPhoneNumber);
+  return hasMeta || hasCallMeBot;
 }
 
 /**

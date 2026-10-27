@@ -40,14 +40,16 @@ export const whatsappService = {
       // Graceful fallback if query fails
     }
 
-    const configured = isWhatsAppConfigured();
-    const liveDeliveryActive = !config.whatsappTestMode && configured;
+    const callmebotConfigured = Boolean(settings?.whatsappApiKey || config.callmebotApiKey);
+    const configured = isWhatsAppConfigured() || callmebotConfigured;
+    const liveDeliveryActive = (!config.whatsappTestMode || callmebotConfigured) && configured;
 
     return {
       configured,
       testMode: config.whatsappTestMode,
+      callmebotConfigured,
       connected: Boolean(liveDeliveryActive && hasSentLiveMessage),
-      deliveryMode: config.whatsappTestMode
+      deliveryMode: config.whatsappTestMode && !callmebotConfigured
         ? 'test_mode'
         : (configured ? (hasSentLiveMessage ? 'live_verified' : 'live_pending_verification') : 'unconfigured'),
       apiVersion: config.whatsappApiVersion,
@@ -60,6 +62,7 @@ export const whatsappService = {
         ? {
             whatsappNotifications: Boolean(settings.whatsappNotifications ?? settings.whatsAppNotifications),
             whatsappPhone: settings.whatsappPhone || settings.phoneNumber || '',
+            whatsappApiKeyMasked: settings.whatsappApiKey ? maskSensitive(settings.whatsappApiKey) : '',
             reminderTime: settings.reminderTime || '09:00',
             quietHoursStart: settings.quietHoursStart || '22:00',
             quietHoursEnd: settings.quietHoursEnd || '08:00',
@@ -80,7 +83,9 @@ export const whatsappService = {
     type = 'text',
     textBody = '',
     templateName = '',
-    templateLang = 'en_US'
+    templateLang = 'en_US',
+    apiKey = null,
+    forceLive = false
   }) {
     const rawTo = to || config.whatsappRecipientPhoneNumber;
     const phoneValidation = validateInternationalPhoneNumber(rawTo);
@@ -93,8 +98,52 @@ export const whatsappService = {
     }
     const cleanTo = phoneValidation.sanitized;
 
+    // Check if CallMeBot API key is available
+    let callMeBotKey = apiKey || config.callmebotApiKey || null;
+    if (!callMeBotKey) {
+      try {
+        const settings = await supabaseRepository.getSettings();
+        callMeBotKey = settings?.whatsappApiKey || null;
+      } catch {
+        // Ignore settings query error
+      }
+    }
+
+    // CallMeBot direct delivery
+    if (callMeBotKey && (!config.whatsappTestMode || forceLive)) {
+      try {
+        const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(cleanTo)}&text=${encodeURIComponent(textBody)}&apikey=${encodeURIComponent(callMeBotKey)}`;
+        const response = await fetch(url);
+        const respText = await response.text().catch(() => '');
+        if (response.ok || respText.toLowerCase().includes('message queued') || respText.toLowerCase().includes('message sent') || respText.toLowerCase().includes('success')) {
+          const messageId = `cmb_${Date.now()}`;
+          return {
+            success: true,
+            simulated: false,
+            status: 'sent',
+            provider: 'callmebot',
+            whatsappMessageId: messageId,
+            response: { text: respText }
+          };
+        } else {
+          return {
+            success: false,
+            status: 'failed',
+            errorMessage: respText || `CallMeBot HTTP ${response.status}`,
+            response: { text: respText }
+          };
+        }
+      } catch (err) {
+        return {
+          success: false,
+          status: 'failed',
+          errorMessage: err.message || 'Error communicating with CallMeBot'
+        };
+      }
+    }
+
     // 1. Test Mode: simulate delivery safely without external HTTP requests
-    if (config.whatsappTestMode) {
+    if (config.whatsappTestMode && !forceLive) {
       const simulatedId = `sim_wamid_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
       return {
         success: true,
@@ -190,7 +239,7 @@ export const whatsappService = {
    * Sends an ad-hoc test message to verify recipient configuration and test mode.
    * Only attempts dispatch when required recipient and credentials are provided.
    */
-  async sendTestNotification({ recipientPhone, customText } = {}) {
+  async sendTestNotification({ recipientPhone, customText, apiKey } = {}) {
     let settings = null;
     try {
       settings = await supabaseRepository.getSettings();
@@ -199,6 +248,7 @@ export const whatsappService = {
     }
 
     const targetRecipient = recipientPhone || settings?.whatsappPhone || settings?.phoneNumber || config.whatsappRecipientPhoneNumber;
+    const effectiveApiKey = apiKey || settings?.whatsappApiKey || config.callmebotApiKey || null;
 
     if (!targetRecipient) {
       return {
@@ -218,24 +268,27 @@ export const whatsappService = {
     }
 
     // If live sending is requested, verify credentials exist
-    if (!config.whatsappTestMode && (!config.whatsappApiToken || !config.whatsappPhoneNumberId)) {
+    if (!config.whatsappTestMode && !effectiveApiKey && (!config.whatsappApiToken || !config.whatsappPhoneNumberId)) {
       return {
         success: false,
         status: 'unconfigured',
-        errorMessage: 'WhatsApp Cloud API credentials (WHATSAPP_API_TOKEN or WHATSAPP_PHONE_NUMBER_ID) are missing. Please configure them in backend/.env.'
+        errorMessage: 'WhatsApp credentials (WHATSAPP_API_TOKEN or CALLMEBOT_API_KEY) are missing. Please configure them in backend/.env or in Notifications settings.'
       };
     }
 
     const cleanTo = phoneValidation.sanitized;
+    const isCallMeBot = Boolean(effectiveApiKey);
     const body = customText || `👋 *ReviseCode WhatsApp Notification Test*
 \nThis is a verified test message from your ReviseCode revision tracker.
 \nSpaced-repetition milestone reminders are active for Days 3, 7, 12, 20, and 30.
-\n⚙️ Mode: ${config.whatsappTestMode ? 'Test Mode (Simulated)' : 'Live Meta Cloud API'}`;
+\n⚙️ Provider: ${isCallMeBot ? 'CallMeBot Direct WhatsApp' : (config.whatsappTestMode ? 'Test Mode (Simulated)' : 'Live Meta Cloud API')}`;
 
     const sendResult = await this.sendRawMessage({
       to: cleanTo,
       type: 'text',
-      textBody: body
+      textBody: body,
+      apiKey: effectiveApiKey,
+      forceLive: isCallMeBot // Live dispatch if user gave CallMeBot key
     });
 
     // Record delivery log
@@ -429,7 +482,8 @@ export const whatsappService = {
         type: config.whatsappTemplateName ? 'template' : 'text',
         textBody: messageBody,
         templateName: config.whatsappTemplateName,
-        templateLang: config.whatsappTemplateLang
+        templateLang: config.whatsappTemplateLang,
+        apiKey: settings?.whatsappApiKey || config.callmebotApiKey || null
       });
 
       // Record delivery log
