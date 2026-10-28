@@ -39,6 +39,58 @@ export const AuthService = {
     return Boolean(this.getToken() && this.getCurrentUser());
   },
 
+  /**
+   * Seamlessly fetches live user profile details from backend /api/auth/me
+   * and updates local session and avatars across devices on refresh.
+   */
+  async syncProfile() {
+    if (!this.isAuthenticated()) return null;
+    try {
+      const res = await api.get('/auth/me');
+      const serverUser = res?.data?.user;
+      if (serverUser && serverUser.id) {
+        const localUser = this.getCurrentUser() || {};
+        const mergedUser = {
+          ...localUser,
+          ...serverUser
+        };
+
+        const serverAvatar = serverUser.avatar;
+        if (serverAvatar && serverAvatar.length > 3) {
+          mergedUser.avatar = serverAvatar;
+          if (serverUser.email) {
+            localStorage.setItem('revisecode_avatar_' + serverUser.email.toLowerCase(), serverAvatar);
+          }
+          if (serverUser.id) {
+            localStorage.setItem('revisecode_avatar_' + serverUser.id, serverAvatar);
+          }
+          localStorage.setItem('revisecode_global_avatar', serverAvatar);
+        }
+
+        const isLocal = Boolean(localStorage.getItem(TOKEN_KEY));
+        const storage = isLocal ? localStorage : sessionStorage;
+        storage.setItem(USER_KEY, JSON.stringify(mergedUser));
+
+        try {
+          const profileRaw = localStorage.getItem('revisecode_profile');
+          const storedProfile = profileRaw ? JSON.parse(profileRaw) : {};
+          const updatedProfile = {
+            ...storedProfile,
+            name: mergedUser.name,
+            avatar: mergedUser.avatar || storedProfile.avatar,
+            role: serverUser.role || storedProfile.role || 'Learner'
+          };
+          localStorage.setItem('revisecode_profile', JSON.stringify(updatedProfile));
+        } catch (_) {}
+
+        return mergedUser;
+      }
+    } catch (err) {
+      console.debug('AuthService.syncProfile background sync notice:', err?.message);
+    }
+    return null;
+  },
+
   _clearUserData() {
     try {
       if (typeof window === 'undefined') return;
@@ -78,6 +130,12 @@ export const AuthService = {
 
     if (cachedPhoto && (!user.avatar || user.avatar.length <= 3)) {
       user.avatar = cachedPhoto;
+    }
+
+    if (user.avatar && user.avatar.length > 3) {
+      if (userEmail) localStorage.setItem('revisecode_avatar_' + userEmail, user.avatar);
+      if (user.id) localStorage.setItem('revisecode_avatar_' + user.id, user.avatar);
+      localStorage.setItem('revisecode_global_avatar', user.avatar);
     }
 
     const storage = rememberMe ? localStorage : sessionStorage;
@@ -204,6 +262,13 @@ export const AuthService = {
     const user = serverUser || decodedUser;
     if (!user) {
       throw new Error('Unable to resolve user profile from authentication token.');
+    }
+
+    if (user.avatar && user.avatar.length > 3) {
+      const emailKey = (user.email || '').toLowerCase();
+      if (emailKey) localStorage.setItem('revisecode_avatar_' + emailKey, user.avatar);
+      if (user.id) localStorage.setItem('revisecode_avatar_' + user.id, user.avatar);
+      localStorage.setItem('revisecode_global_avatar', user.avatar);
     }
 
     localStorage.setItem(TOKEN_KEY, accessToken);

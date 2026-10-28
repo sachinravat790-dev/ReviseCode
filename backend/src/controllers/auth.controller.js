@@ -33,10 +33,19 @@ export const authController = {
 
   async getMe(req, res, next) {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      const userId = req.user?.id;
+      let user = req.user;
+      if (userId) {
+        const liveUser = await authService.getUserProfile(userId);
+        if (liveUser) {
+          user = { ...req.user, ...liveUser };
+        }
+      }
       return successResponse(res, {
         statusCode: 200,
         message: 'Current user session retrieved',
-        data: { user: req.user }
+        data: { user }
       });
     } catch (err) {
       next(err);

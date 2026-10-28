@@ -345,6 +345,60 @@ export function initNavigation() {
     console.debug('Error populating navigation profile:', err);
   }
 
+  // Live cross-device cloud profile synchronization
+  if (AuthService.isAuthenticated()) {
+    AuthService.syncProfile().then(serverUser => {
+      if (!serverUser) return;
+      const updatedFullName = serverUser.name || 'Learner';
+      const updatedRole = serverUser.role || 'Learner';
+      const updatedAvatar = (serverUser.avatar && serverUser.avatar.length > 3) ? serverUser.avatar : null;
+      const updatedInitials = (serverUser.avatar && serverUser.avatar.length <= 3)
+        ? serverUser.avatar
+        : (updatedFullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U');
+
+      document.querySelectorAll('.sidebar-footer .user-avatar, #userProfileMenuBtn').forEach(el => {
+        if (updatedAvatar && (updatedAvatar.startsWith('data:image') || updatedAvatar.startsWith('http'))) {
+          el.innerHTML = `<img src="${updatedAvatar}" alt="${updatedFullName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        } else {
+          el.textContent = updatedInitials;
+        }
+      });
+
+      const sidebarName = document.querySelector('.sidebar-footer .user-name');
+      if (sidebarName) sidebarName.textContent = updatedFullName;
+
+      const sidebarRole = document.querySelector('.sidebar-footer .user-role');
+      if (sidebarRole) sidebarRole.textContent = updatedRole;
+
+      const dashboardWelcome = document.getElementById('dashboardWelcomeName');
+      if (dashboardWelcome) dashboardWelcome.textContent = updatedFullName.split(' ')[0] || 'Learner';
+
+      // Update elements if on profile page
+      const profileAvatar = document.getElementById('profileAvatar');
+      if (profileAvatar) {
+        if (updatedAvatar && (updatedAvatar.startsWith('data:image') || updatedAvatar.startsWith('http'))) {
+          profileAvatar.innerHTML = `<img src="${updatedAvatar}" alt="${updatedFullName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        } else {
+          profileAvatar.textContent = updatedInitials;
+        }
+      }
+      const modalAvatarPreview = document.getElementById('editModalAvatarPreview');
+      if (modalAvatarPreview) {
+        if (updatedAvatar && (updatedAvatar.startsWith('data:image') || updatedAvatar.startsWith('http'))) {
+          modalAvatarPreview.innerHTML = `<img src="${updatedAvatar}" alt="${updatedFullName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        } else {
+          modalAvatarPreview.textContent = updatedInitials;
+        }
+      }
+      const profileName = document.getElementById('profileName');
+      if (profileName) profileName.textContent = updatedFullName;
+      const profileRole = document.getElementById('profileRole');
+      if (profileRole) profileRole.textContent = updatedRole;
+    }).catch(err => {
+      console.debug('Background profile sync silent catch:', err);
+    });
+  }
+
   // Notifications Badge Counter from backend API
   const notifBadge = document.getElementById('topbarNotifBadge');
   if (notifBadge) {

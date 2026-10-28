@@ -292,6 +292,47 @@ export const authService = {
     return updatedUser;
   },
 
+  async getUserProfile(userId) {
+    if (!userId) return null;
+
+    if (isSupabaseConfigured() && config.nodeEnv !== 'test') {
+      try {
+        const client = getSupabaseClient();
+        if (client?.auth?.admin?.getUserById) {
+          const { data, error } = await client.auth.admin.getUserById(userId);
+          if (!error && data?.user) {
+            const u = data.user;
+            const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email?.split('@')[0] || 'User';
+            const avatar = u.user_metadata?.avatar || u.user_metadata?.avatar_url || computeAvatar(name);
+            const role = u.user_metadata?.role || 'Learner';
+            return {
+              id: u.id,
+              email: u.email,
+              name,
+              avatar,
+              role
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase admin getUserById error:', err.message);
+      }
+    }
+
+    const u = inMemoryUsers.get(userId);
+    if (u) {
+      return {
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        avatar: u.avatar || computeAvatar(u.name),
+        role: u.role || 'Learner'
+      };
+    }
+
+    return null;
+  },
+
   resetTestUsers() {
     inMemoryUsers.clear();
   }

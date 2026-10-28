@@ -55,6 +55,12 @@ function updateAvatarElement(el, avatarData, fallbackText = 'U') {
 export function initProfile() {
   renderProfile();
 
+  if (AuthService.isAuthenticated()) {
+    AuthService.syncProfile().then(serverUser => {
+      if (serverUser) renderProfile();
+    }).catch(() => {});
+  }
+
   const editBtn = document.getElementById('editProfileBtn');
   const modal = document.getElementById('editProfileModal');
   const form = document.getElementById('editProfileForm');
@@ -118,7 +124,7 @@ export function initProfile() {
 
   // Remove photo and revert to initials
   if (modalRemoveBtn) {
-    modalRemoveBtn.onclick = () => {
+    modalRemoveBtn.onclick = async () => {
       const p = StorageManager.getProfile();
       const initials = p.name ? p.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
       currentAvatar = initials;
@@ -129,7 +135,18 @@ export function initProfile() {
       if (sessionUser) {
         sessionUser.avatar = initials;
         localStorage.setItem('revisecode_user', JSON.stringify(sessionUser));
+        if (sessionUser.email) {
+          localStorage.removeItem('revisecode_avatar_' + sessionUser.email.toLowerCase());
+        }
+        if (sessionUser.id) {
+          localStorage.removeItem('revisecode_avatar_' + sessionUser.id);
+        }
       }
+      localStorage.removeItem('revisecode_global_avatar');
+
+      try {
+        await api.put('/auth/profile', { avatar: initials });
+      } catch (_) {}
 
       showToast('Photo Removed', 'Reverted to letter avatar initials.', 'info');
       renderProfile();
@@ -200,8 +217,16 @@ export function initProfile() {
 }
 
 async function renderProfile() {
-  const profile = StorageManager.getProfile() || AuthService.getCurrentUser();
-  currentAvatar = profile.avatar || '';
+  const profile = StorageManager.getProfile() || AuthService.getCurrentUser() || {};
+  const userSession = AuthService.getCurrentUser();
+  const userEmail = (userSession?.email || profile?.email || '').toLowerCase();
+  const persistentAvatar = (userEmail && localStorage.getItem('revisecode_avatar_' + userEmail)) ||
+                           (userSession?.id && localStorage.getItem('revisecode_avatar_' + userSession.id)) ||
+                           localStorage.getItem('revisecode_global_avatar');
+  const avatarData = (profile?.avatar && profile.avatar.length > 3 ? profile.avatar : null) || 
+                     (userSession?.avatar && userSession.avatar.length > 3 ? userSession.avatar : null) || 
+                     persistentAvatar || '';
+  currentAvatar = avatarData;
 
   let totalQuestions = 0;
   let completedSessions = 0;
@@ -243,12 +268,12 @@ async function renderProfile() {
   if (roleEl) roleEl.textContent = profile.role || 'Learner';
   if (dateEl) dateEl.textContent = profile.dateJoined ? formatDate(profile.dateJoined) : 'Recently';
 
-  updateAvatarElement(avatarEl, profile.avatar, initials);
-  updateAvatarElement(modalAvatarPreview, profile.avatar, initials);
+  updateAvatarElement(avatarEl, avatarData, initials);
+  updateAvatarElement(modalAvatarPreview, avatarData, initials);
 
   // Synchronize navigation header and sidebar avatars
   document.querySelectorAll('.sidebar-footer .user-avatar, #userProfileMenuBtn').forEach(el => {
-    updateAvatarElement(el, profile.avatar, initials);
+    updateAvatarElement(el, avatarData, initials);
   });
 
   if (statSaved) statSaved.textContent = totalQuestions;
