@@ -4,7 +4,7 @@
  */
 
 import { api } from './api.js';
-import { showToast } from './utils.js';
+import { showToast } from './navigation.js';
 
 const DEFAULT_VAPID_PUBLIC_KEY = 'BLNh2hhCDdHnSApuD8PHkAJckSaoEMy_p3BuR-5maewjFqJ2_hOR2oG6867Di8fZxYQZipTUBuIKe5I91eLsDu0';
 
@@ -64,15 +64,29 @@ export class PushNotificationManager {
   }
 
   async subscribe() {
+    const enableBtn = document.getElementById('btnEnablePush');
+    const origText = enableBtn ? enableBtn.textContent : '📲 Enable Phone Notifications';
+    if (enableBtn) enableBtn.textContent = '⏳ Requesting Permission...';
+
     if (!this.isSupported) {
-      showToast('Notifications', 'Push notifications are not supported in this browser.', 'error');
+      if (enableBtn) enableBtn.textContent = origText;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        showToast('iPhone / iPad Setup', 'Tap Safari Share icon -> "Add to Home Screen" to enable push notifications on iOS.', 'warning');
+        alert('iPhone / iPad Setup:\n1. Tap the Share button in Safari.\n2. Tap "Add to Home Screen".\n3. Open ReviseCode from your home screen to enable notifications.');
+      } else {
+        showToast('Notifications', 'Push notifications are not supported in this browser.', 'error');
+        alert('Push notifications are not supported in this browser. Please use Chrome on Android or Desktop.');
+      }
       return false;
     }
 
     try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
+        if (enableBtn) enableBtn.textContent = origText;
         showToast('Notifications', 'Notification permission was denied. Please allow in browser settings.', 'warning');
+        alert('Notification permission was blocked.\n\nPlease tap the lock/settings icon (🔒 / ⚙️) next to the website address in your browser bar and set Notifications to "Allow".');
         this.updateUI('blocked');
         return false;
       }

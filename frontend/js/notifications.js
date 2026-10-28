@@ -253,8 +253,14 @@ function renderNotificationsList() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('notificationsListContainer')) {
+      initNotifications();
+    }
+  });
+} else {
   if (document.getElementById('notificationsListContainer')) {
     initNotifications();
   }
-});
+}
