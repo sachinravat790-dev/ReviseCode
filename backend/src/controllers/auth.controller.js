@@ -1,5 +1,6 @@
 import { authService } from '../services/auth.service.js';
 import { successResponse } from '../utils/api-response.js';
+import { config } from '../config/env.js';
 
 export const authController = {
   async register(req, res, next) {
