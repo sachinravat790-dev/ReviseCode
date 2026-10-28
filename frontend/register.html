@@ -119,10 +119,12 @@
 
           <div class="form-group">
             <label for="regPassword" class="form-label form-label-required">Password</label>
-            <div class="input-icon-wrapper">
+            <div class="input-icon-wrapper" style="position: relative;">
               <i data-lucide="lock"></i>
-              <input type="password" id="regPassword" class="form-control" placeholder="At least 8 characters" required>
-              <i data-lucide="eye" class="icon-right" id="toggleRegPassword" title="Show/hide password"></i>
+              <input type="password" id="regPassword" class="form-control" placeholder="At least 8 characters" style="padding-right: 44px;" required>
+              <button type="button" id="toggleRegPassword" aria-label="Show or hide password" title="Show/hide password" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; padding: 6px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); z-index: 5;">
+                <i data-lucide="eye" style="width: 18px; height: 18px; pointer-events: none;"></i>
+              </button>
             </div>
           </div>
 
@@ -163,14 +165,17 @@
     const togglePass = document.getElementById('toggleRegPassword');
     const passInput = document.getElementById('regPassword');
     if (togglePass && passInput) {
-      togglePass.onclick = () => {
+      togglePass.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const isPass = passInput.type === 'password';
         passInput.type = isPass ? 'text' : 'password';
-        togglePass.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+        const iconName = isPass ? 'eye-off' : 'eye';
+        togglePass.innerHTML = `<i data-lucide="${iconName}" style="width: 18px; height: 18px; pointer-events: none;"></i>`;
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
-          window.lucide.createIcons();
+          window.lucide.createIcons({ root: togglePass });
         }
-      };
+      });
     }
 
     // Social buttons: Real Supabase OAuth flow
