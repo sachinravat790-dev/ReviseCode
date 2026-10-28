@@ -68,6 +68,11 @@ export const config = {
   whatsappTemplateLang: process.env.WHATSAPP_TEMPLATE_LANG || 'en_US',
   callmebotApiKey: process.env.CALLMEBOT_API_KEY || process.env.WHATSAPP_API_KEY || '',
 
+  // Web Push (Native Phone Lock Screen & Browser Notifications)
+  vapidPublicKey: process.env.VAPID_PUBLIC_KEY || 'BLNh2hhCDdHnSApuD8PHkAJckSaoEMy_p3BuR-5maewjFqJ2_hOR2oG6867Di8fZxYQZipTUBuIKe5I91eLsDu0',
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || 'lYHNdM34HTQc0Gx0-lb-ZCj2Azhy_O95ezRMk-Cvmzg',
+  vapidSubject: process.env.VAPID_SUBJECT || 'mailto:admin@revisecode.dev',
+
   // Google Gemini API Configuration (Dynamic getter with disk sync)
   _geminiApiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
   get geminiApiKey() {

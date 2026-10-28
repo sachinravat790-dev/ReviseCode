@@ -9,6 +9,7 @@ import settingsRoutes from './settings.routes.js';
 import notificationsRoutes from './notifications.routes.js';
 import assistantRoutes from './assistant.routes.js';
 import whatsappRoutes from './whatsapp.routes.js';
+import pushRoutes from './push.routes.js';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/settings', settingsRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/assistant', assistantRoutes);
 router.use('/whatsapp', whatsappRoutes);
+router.use('/push', pushRoutes);
 
 export default router;

@@ -177,6 +177,30 @@
                 </div>
               </div>
 
+              <!-- Native Phone Push Notifications (Zero-Config, Direct on Lock Screen) -->
+              <div style="background: linear-gradient(135deg, rgba(88, 166, 255, 0.12), rgba(137, 87, 229, 0.12)); border: 1px solid rgba(88, 166, 255, 0.35); border-radius: var(--radius-md, 8px); padding: 16px; margin: 0 16px 20px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                  <div>
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 6px;">
+                      📲 Phone Lock-Screen Push Notifications
+                    </h4>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; line-height: 1.4;">
+                      Direct alerts on your phone screen when Day 3, 7, 12, 20, or 30 arrives — works even when browser is closed!
+                    </p>
+                  </div>
+                  <span id="pushStatusBadge" class="badge badge-warning" style="font-size: 11px;">Checking...</span>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">
+                  <button type="button" id="btnEnablePush" class="btn btn-primary" style="font-size: 13px; padding: 8px 16px;">
+                    📲 Enable Phone Notifications
+                  </button>
+                  <button type="button" id="btnTestPush" class="btn btn-secondary" style="font-size: 13px; padding: 8px 16px; display: none;">
+                    🔔 Send Test Alert to Screen
+                  </button>
+                </div>
+              </div>
+
               <form id="notifPreferencesForm">
                 <div class="form-group">
                   <label class="form-check" style="margin-bottom: 12px;">

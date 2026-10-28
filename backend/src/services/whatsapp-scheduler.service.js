@@ -7,6 +7,7 @@
 
 import { supabaseRepository } from '../repositories/supabase.repository.js';
 import { whatsappService } from './whatsapp.service.js';
+import { pushService } from './push.service.js';
 import { getCurrentTimeInTimezone, isWithinQuietHours } from '../utils/whatsapp-helpers.js';
 import { getTodayDateString } from '../utils/dates.js';
 
@@ -78,10 +79,13 @@ export class WhatsAppScheduler {
         const runKey = `${todayDate}:scheduled:${currentTime}`;
         if (!this.lastRuns.has(runKey)) {
           this.lastRuns.set(runKey, new Date().toISOString());
-          await whatsappService.processMilestoneReminders({
-            window: 'scheduled',
-            targetDate: todayDate
-          });
+          await Promise.allSettled([
+            whatsappService.processMilestoneReminders({
+              window: 'scheduled',
+              targetDate: todayDate
+            }),
+            pushService.processMilestonePushReminders(todayDate)
+          ]);
         }
       }
 
@@ -90,10 +94,13 @@ export class WhatsAppScheduler {
         const runKey = `${todayDate}:before_midnight:${currentTime}`;
         if (!this.lastRuns.has(runKey)) {
           this.lastRuns.set(runKey, new Date().toISOString());
-          await whatsappService.processMilestoneReminders({
-            window: 'before_midnight',
-            targetDate: todayDate
-          });
+          await Promise.allSettled([
+            whatsappService.processMilestoneReminders({
+              window: 'before_midnight',
+              targetDate: todayDate
+            }),
+            pushService.processMilestonePushReminders(todayDate)
+          ]);
         }
       }
 

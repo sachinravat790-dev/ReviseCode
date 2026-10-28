@@ -250,6 +250,7 @@ export class SupabaseRepository {
     this._inMemoryNotifications = [];
     this._inMemorySettings = null;
     this._inMemoryUserSettings = new Map();
+    this._inMemoryPushSubscriptions = new Map();
     this._cachedSubjectsExtra = new Map();
     this._cachedQuestionsExtra = new Map();
     this._missingTables = new Map();
@@ -2099,6 +2100,83 @@ export class SupabaseRepository {
         return updatedSettings;
       }
       throw err;
+    }
+  }
+
+  // ==========================================
+  // PUSH SUBSCRIPTIONS
+  // ==========================================
+
+  async savePushSubscription({ userId = null, endpoint, p256dh, auth }) {
+    if (!endpoint) return null;
+    const sub = {
+      user_id: userId,
+      endpoint,
+      p256dh,
+      auth,
+      updated_at: new Date().toISOString()
+    };
+    this._inMemoryPushSubscriptions.set(endpoint, sub);
+
+    if (this._isTableMissing('push_subscriptions')) {
+      return sub;
+    }
+
+    try {
+      const { data, error } = await this.client
+        .from('push_subscriptions')
+        .upsert(sub, { onConflict: 'endpoint' })
+        .select()
+        .single();
+
+      if (error) {
+        if (isSchemaOrColumnError(error)) {
+          this._markTableMissing('push_subscriptions');
+          return sub;
+        }
+        return sub;
+      }
+      return data;
+    } catch {
+      return sub;
+    }
+  }
+
+  async getPushSubscriptions(userId = null) {
+    if (this._isTableMissing('push_subscriptions')) {
+      const all = Array.from(this._inMemoryPushSubscriptions.values());
+      return userId ? all.filter(s => s.user_id === userId) : all;
+    }
+
+    try {
+      let query = this.client.from('push_subscriptions').select('*');
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+      const { data, error } = await query;
+      if (error) {
+        if (isSchemaOrColumnError(error)) {
+          this._markTableMissing('push_subscriptions');
+          const all = Array.from(this._inMemoryPushSubscriptions.values());
+          return userId ? all.filter(s => s.user_id === userId) : all;
+        }
+        return Array.from(this._inMemoryPushSubscriptions.values());
+      }
+      return data || [];
+    } catch {
+      return Array.from(this._inMemoryPushSubscriptions.values());
+    }
+  }
+
+  async deletePushSubscription(endpoint) {
+    this._inMemoryPushSubscriptions.delete(endpoint);
+    if (this._isTableMissing('push_subscriptions')) return true;
+
+    try {
+      await this.client.from('push_subscriptions').delete().eq('endpoint', endpoint);
+      return true;
+    } catch {
+      return true;
     }
   }
 

@@ -6,6 +6,7 @@
 import { api } from './api.js';
 import { formatRelativeTime, renderEmptyState } from './app.js';
 import { showToast } from './navigation.js';
+import { pushManager } from './push-notifications.js';
 
 let activeCategory = 'all';
 let allNotifications = [];
@@ -13,6 +14,27 @@ let allNotifications = [];
 export async function initNotifications() {
   await loadNotificationsList();
   await loadSettingsPreferences();
+
+  // Initialize Native Push Manager
+  try {
+    await pushManager.init();
+  } catch (e) {
+    console.warn('Push manager init error:', e);
+  }
+
+  const enablePushBtn = document.getElementById('btnEnablePush');
+  if (enablePushBtn) {
+    enablePushBtn.onclick = async () => {
+      await pushManager.subscribe();
+    };
+  }
+
+  const testPushBtn = document.getElementById('btnTestPush');
+  if (testPushBtn) {
+    testPushBtn.onclick = async () => {
+      await pushManager.sendTest();
+    };
+  }
 
   // Category filter tabs
   document.querySelectorAll('.notif-filter-btn').forEach(btn => {
