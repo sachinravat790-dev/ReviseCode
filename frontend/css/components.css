@@ -631,19 +631,57 @@
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
-.input-icon-wrapper i, .input-icon-wrapper svg {
+.input-icon-wrapper > i:first-child,
+.input-icon-wrapper > svg:first-child {
   position: absolute;
   left: 14px;
   color: var(--text-muted);
   width: 18px;
   height: 18px;
   pointer-events: none;
+  z-index: 2;
 }
 
 .input-icon-wrapper .form-control {
+  width: 100%;
   padding-left: 42px;
+  padding-right: 44px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 6px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 10;
+  border-radius: var(--radius-sm, 4px);
+  transition: color 0.15s ease;
+  line-height: 1;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.password-toggle-btn svg {
+  position: static !important;
+  left: auto !important;
+  width: 18px !important;
+  height: 18px !important;
+  pointer-events: none;
+  display: block;
 }
 
 .input-icon-wrapper .icon-right {
@@ -653,6 +691,7 @@
   color: var(--text-muted);
   cursor: pointer;
   pointer-events: auto;
+  z-index: 10;
 }
 
 .form-row {
