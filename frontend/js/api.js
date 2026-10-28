@@ -54,8 +54,8 @@ export async function apiRequest(endpoint, options = {}) {
   try {
     const token = localStorage.getItem('revisecode_token') || sessionStorage.getItem('revisecode_token');
     if (token) {
-      if (token.length > 2048) {
-        // Prevent HTTP 494 "Request Header Too Large" caused by legacy oversized tokens
+      if (token.length > 8192) {
+        // Prevent HTTP 494 "Request Header Too Large" caused by bloated legacy tokens (>8KB)
         localStorage.removeItem('revisecode_token');
         sessionStorage.removeItem('revisecode_token');
       } else {
