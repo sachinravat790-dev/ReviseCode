@@ -79,7 +79,20 @@ export async function apiRequest(endpoint, options = {}) {
 
   const fetchPromise = (async () => {
     try {
-      const response = await fetch(url, config);
+      let response;
+      try {
+        response = await fetch(url, config);
+      } catch (firstErr) {
+        // Transparent auto-retry on transient cold-starts (e.g. Render waking from sleep)
+        await new Promise(r => setTimeout(r, 1500));
+        response = await fetch(url, config);
+      }
+
+      // If server returned cold-start gateway error (502/503/504), retry once after 2 seconds
+      if (response && [502, 503, 504].includes(response.status)) {
+        await new Promise(r => setTimeout(r, 2000));
+        response = await fetch(url, config);
+      }
       
       // Parse response body safely
       let data;
