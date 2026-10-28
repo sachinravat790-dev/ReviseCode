@@ -12,16 +12,7 @@ let activeCategory = 'all';
 let allNotifications = [];
 
 export async function initNotifications() {
-  await loadNotificationsList();
-  await loadSettingsPreferences();
-
-  // Initialize Native Push Manager
-  try {
-    await pushManager.init();
-  } catch (e) {
-    console.warn('Push manager init error:', e);
-  }
-
+  // 1. Immediately wire push manager & buttons without waiting for network requests
   const enablePushBtn = document.getElementById('btnEnablePush');
   if (enablePushBtn) {
     enablePushBtn.onclick = async () => {
@@ -35,6 +26,16 @@ export async function initNotifications() {
       await pushManager.sendTest();
     };
   }
+
+  try {
+    await pushManager.init();
+  } catch (e) {
+    console.warn('Push manager init error:', e);
+  }
+
+  // 2. Load notifications and preferences in parallel
+  loadNotificationsList().catch(e => console.warn('Notifications load error:', e));
+  loadSettingsPreferences().catch(e => console.warn('Settings load error:', e));
 
   // Category filter tabs
   document.querySelectorAll('.notif-filter-btn').forEach(btn => {

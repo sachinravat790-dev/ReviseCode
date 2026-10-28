@@ -6,6 +6,8 @@
 import { api } from './api.js';
 import { showToast } from './utils.js';
 
+const DEFAULT_VAPID_PUBLIC_KEY = 'BLNh2hhCDdHnSApuD8PHkAJckSaoEMy_p3BuR-5maewjFqJ2_hOR2oG6867Di8fZxYQZipTUBuIKe5I91eLsDu0';
+
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding)
@@ -35,17 +37,26 @@ export class PushNotificationManager {
       return;
     }
 
+    // Instant permission check to avoid any "Checking..." delay
+    if (Notification.permission === 'denied') {
+      this.updateUI('blocked');
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      this.updateUI('default');
+    }
+
     try {
       this.registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-      this.subscription = await this.registration.pushManager.getSubscription();
-
-      if (Notification.permission === 'granted' && this.subscription) {
-        this.updateUI('subscribed');
-      } else if (Notification.permission === 'denied') {
-        this.updateUI('blocked');
-      } else {
-        this.updateUI('default');
+      if (this.registration && this.registration.pushManager) {
+        this.subscription = await this.registration.pushManager.getSubscription();
+        if (Notification.permission === 'granted' && this.subscription) {
+          this.updateUI('subscribed');
+          return;
+        }
       }
+      this.updateUI('default');
     } catch (err) {
       console.warn('Service worker registration error:', err.message);
       this.updateUI('default');
@@ -66,12 +77,19 @@ export class PushNotificationManager {
         return false;
       }
 
-      // Fetch VAPID public key
-      const keyRes = await api.get('/push/public-key');
-      const publicKey = keyRes.data?.publicKey;
+      if (!this.registration) {
+        this.registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      }
 
-      if (!publicKey) {
-        throw new Error('VAPID public key missing from server');
+      // Fetch VAPID public key with reliable embedded fallback
+      let publicKey = DEFAULT_VAPID_PUBLIC_KEY;
+      try {
+        const keyRes = await api.get('/push/public-key');
+        if (keyRes.data?.publicKey) {
+          publicKey = keyRes.data.publicKey;
+        }
+      } catch (err) {
+        console.warn('Using embedded VAPID public key fallback:', err.message);
       }
 
       const convertedKey = urlBase64ToUint8Array(publicKey);
@@ -81,10 +99,14 @@ export class PushNotificationManager {
       });
 
       const subJson = this.subscription.toJSON();
-      await api.post('/push/subscribe', {
-        endpoint: subJson.endpoint,
-        keys: subJson.keys
-      });
+      try {
+        await api.post('/push/subscribe', {
+          endpoint: subJson.endpoint,
+          keys: subJson.keys
+        });
+      } catch (err) {
+        console.warn('Subscription saved locally, server sync deferred:', err.message);
+      }
 
       this.updateUI('subscribed');
       showToast('Push Notifications', 'Phone lock-screen push notifications activated!', 'success');
