@@ -86,11 +86,25 @@ export function initProfile() {
         // Persist to storage
         StorageManager.saveProfile({ avatar: compressedAvatar });
 
-        // Synchronize active session user
+        // Synchronize active session user & persistent user avatar keys
         const sessionUser = AuthService.getCurrentUser();
         if (sessionUser) {
           sessionUser.avatar = compressedAvatar;
           localStorage.setItem('revisecode_user', JSON.stringify(sessionUser));
+          if (sessionUser.email) {
+            localStorage.setItem('revisecode_avatar_' + sessionUser.email.toLowerCase(), compressedAvatar);
+          }
+          if (sessionUser.id) {
+            localStorage.setItem('revisecode_avatar_' + sessionUser.id, compressedAvatar);
+          }
+        }
+        localStorage.setItem('revisecode_global_avatar', compressedAvatar);
+
+        // Sync to backend database
+        try {
+          await api.put('/auth/profile', { avatar: compressedAvatar });
+        } catch (e) {
+          console.warn('Backend avatar sync deferred:', e.message);
         }
 
         showToast('Photo Updated', 'Profile picture updated successfully.', 'success');
@@ -165,7 +179,18 @@ export function initProfile() {
         sessionUser.name = name;
         if (currentAvatar) sessionUser.avatar = currentAvatar;
         localStorage.setItem('revisecode_user', JSON.stringify(sessionUser));
+        if (currentAvatar && sessionUser.email) {
+          localStorage.setItem('revisecode_avatar_' + sessionUser.email.toLowerCase(), currentAvatar);
+        }
+        if (currentAvatar && sessionUser.id) {
+          localStorage.setItem('revisecode_avatar_' + sessionUser.id, currentAvatar);
+        }
       }
+      if (currentAvatar) localStorage.setItem('revisecode_global_avatar', currentAvatar);
+
+      try {
+        api.put('/auth/profile', { name, role, avatar: currentAvatar });
+      } catch (_) {}
 
       modal.classList.remove('is-open');
       showToast('Profile Updated', 'Your profile details have been saved.', 'success');

@@ -70,6 +70,16 @@ export const AuthService = {
       throw new Error(res.message || 'Login failed: missing token or user data');
     }
 
+    // Restore persistent user avatar if server returned initials
+    const userEmail = (user.email || email).toLowerCase();
+    const cachedPhoto = localStorage.getItem('revisecode_avatar_' + userEmail) || 
+                        (user.id && localStorage.getItem('revisecode_avatar_' + user.id)) ||
+                        localStorage.getItem('revisecode_global_avatar');
+
+    if (cachedPhoto && (!user.avatar || user.avatar.length <= 3)) {
+      user.avatar = cachedPhoto;
+    }
+
     const storage = rememberMe ? localStorage : sessionStorage;
     storage.setItem(TOKEN_KEY, token);
     storage.setItem(USER_KEY, JSON.stringify(user));

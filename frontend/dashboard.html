@@ -172,7 +172,7 @@
           <div class="metric-card">
             <div>
               <div class="metric-label">Total Questions</div>
-              <div class="metric-value" id="metricTotalQuestions">0</div>
+              <div class="metric-value" id="metricTotalQuestions">--</div>
               <div class="metric-change" style="color: var(--text-muted);">
                 <i data-lucide="book-open" style="width: 14px; height: 14px;"></i> Across all subjects
               </div>
@@ -185,7 +185,7 @@
           <div class="metric-card">
             <div>
               <div class="metric-label">Revisions Due Today</div>
-              <div class="metric-value" id="metricDueToday" style="color: var(--secondary);">0</div>
+              <div class="metric-value" id="metricDueToday" style="color: var(--secondary);">--</div>
               <div class="metric-change" style="color: var(--secondary);">
                 <i data-lucide="clock" style="width: 14px; height: 14px;"></i> Optimal recall window
               </div>
@@ -198,7 +198,7 @@
           <div class="metric-card">
             <div>
               <div class="metric-label">Overdue Revisions</div>
-              <div class="metric-value" id="metricOverdue" style="color: var(--danger);">0</div>
+              <div class="metric-value" id="metricOverdue" style="color: var(--danger);">--</div>
               <div class="metric-change" style="color: var(--danger);">
                 <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Needs priority review
               </div>
@@ -211,7 +211,7 @@
           <div class="metric-card">
             <div>
               <div class="metric-label">Completion Rate</div>
-              <div class="metric-value" id="metricCompletionRate" style="color: var(--success);">0%</div>
+              <div class="metric-value" id="metricCompletionRate" style="color: var(--success);">--</div>
               <div class="metric-change" style="color: var(--success);">
                 <i data-lucide="trending-up" style="width: 14px; height: 14px;"></i> On-time milestone rate
               </div>
@@ -221,6 +221,26 @@
             </div>
           </div>
         </div>
+
+        <script>
+          // Pre-paint instantaneous cache injection: renders saved stats in 0ms before scripts execute
+          try {
+            const raw = localStorage.getItem('revisecode_cached_dashboard_snapshot');
+            if (raw) {
+              const c = JSON.parse(raw);
+              if (c && c.stats) {
+                const qEl = document.getElementById('metricTotalQuestions');
+                const dEl = document.getElementById('metricDueToday');
+                const oEl = document.getElementById('metricOverdue');
+                const crEl = document.getElementById('metricCompletionRate');
+                if (qEl && c.stats.totalQuestions !== undefined) qEl.textContent = c.stats.totalQuestions;
+                if (dEl && c.stats.dueToday !== undefined) dEl.textContent = c.stats.dueToday;
+                if (oEl && c.stats.overdue !== undefined) oEl.textContent = c.stats.overdue;
+                if (crEl && c.stats.completionRate !== undefined) crEl.textContent = c.stats.completionRate + '%';
+              }
+            }
+          } catch (_) {}
+        </script>
 
         <!-- Two Column Dashboard Layout -->
         <div class="dashboard-grid">

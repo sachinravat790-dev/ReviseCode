@@ -9,6 +9,7 @@ const router = Router();
 router.post('/register', validateBody(registerSchema), authController.register);
 router.post('/login', validateBody(loginSchema), authController.login);
 router.get('/me', authenticate, authController.getMe);
+router.put('/profile', authenticate, authController.updateProfile);
 router.post('/logout', authController.logout);
 router.get('/oauth-url/:provider', authController.getOAuthUrl);
 

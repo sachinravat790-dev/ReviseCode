@@ -9,6 +9,26 @@ import { AuthService } from './auth.js';
 import { formatDate, formatRelativeTime, renderEmptyState } from './app.js';
 import { showToast } from './navigation.js';
 
+const DASHBOARD_CACHE_KEY = 'revisecode_cached_dashboard_snapshot';
+
+function applyDashboardMetrics(stats, questionsCount = null) {
+  const totalQuestionsEl = document.getElementById('metricTotalQuestions');
+  const dueTodayEl = document.getElementById('metricDueToday');
+  const overdueEl = document.getElementById('metricOverdue');
+  const completionRateEl = document.getElementById('metricCompletionRate');
+  const streakCountEl = document.getElementById('dashboardStreakCount');
+
+  const totalQuestions = stats.totalQuestions ?? questionsCount ?? (totalQuestionsEl && totalQuestionsEl.textContent !== '--' ? parseInt(totalQuestionsEl.textContent, 10) : 0);
+
+  if (totalQuestionsEl && totalQuestions !== undefined && totalQuestions !== null) totalQuestionsEl.textContent = totalQuestions;
+  if (dueTodayEl && stats.dueToday !== undefined) dueTodayEl.textContent = stats.dueToday;
+  if (overdueEl && stats.overdue !== undefined) overdueEl.textContent = stats.overdue;
+  if (completionRateEl && stats.completionRate !== undefined) completionRateEl.textContent = `${stats.completionRate}%`;
+  if (streakCountEl && stats.streak !== undefined) streakCountEl.textContent = `${stats.streak} Days`;
+
+  return totalQuestions;
+}
+
 export async function renderDashboard() {
   const profile = StorageManager.getProfile();
   const currentUser = AuthService.getCurrentUser() || profile;
@@ -20,7 +40,28 @@ export async function renderDashboard() {
     welcomeEl.textContent = firstName;
   }
 
-  // 2. Load Stats, Queue, Progress, Questions, and Activity in parallel with resilient fault tolerance
+  // 2. Instant Stale-While-Revalidate (0ms Render) from local cache
+  try {
+    const rawCached = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (rawCached) {
+      const cached = JSON.parse(rawCached);
+      if (cached && cached.stats) {
+        const cachedTotal = applyDashboardMetrics(cached.stats, cached.totalQuestions);
+        if (cached.dueMilestones) renderQueue(cached.dueMilestones);
+        if (cached.subjectProgress) renderSubjectProgress(cached.subjectProgress, cachedTotal || 1);
+        if (cached.recentQuestions) renderRecentQuestions(cached.recentQuestions);
+        if (cached.recentActivity) {
+          renderRecentActivity(cached.recentActivity);
+          renderWeeklyChart(cached.recentActivity);
+        }
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      }
+    }
+  } catch (_) {}
+
+  // 3. Load Stats, Queue, Progress, Questions, and Activity in parallel from backend
   try {
     const [statsResult, todayResult, progressResult, questionsResult, activityResult] = await Promise.allSettled([
       api.get('/dashboard/stats'),
@@ -65,20 +106,7 @@ export async function renderDashboard() {
       console.warn('Dashboard partial widget warning:', failedList.map(f => `${f.name}: ${f.result.reason?.message}`).join('; '));
     }
 
-    // Render Metrics
-    const totalQuestionsEl = document.getElementById('metricTotalQuestions');
-    const dueTodayEl = document.getElementById('metricDueToday');
-    const overdueEl = document.getElementById('metricOverdue');
-    const completionRateEl = document.getElementById('metricCompletionRate');
-    const streakCountEl = document.getElementById('dashboardStreakCount');
-
-    const totalQuestions = stats.totalQuestions || questionsData?.pagination?.total || recentQuestions.length || 0;
-
-    if (totalQuestionsEl) totalQuestionsEl.textContent = totalQuestions;
-    if (dueTodayEl) dueTodayEl.textContent = stats.dueToday ?? 0;
-    if (overdueEl) overdueEl.textContent = stats.overdue ?? 0;
-    if (completionRateEl) completionRateEl.textContent = `${stats.completionRate ?? 100}%`;
-    if (streakCountEl) streakCountEl.textContent = `${stats.streak ?? 0} Days`;
+    const totalQuestions = applyDashboardMetrics(stats, questionsData?.pagination?.total || recentQuestions.length || 0);
 
     // Render Revision Queue
     renderQueue(dueMilestones);
@@ -95,11 +123,28 @@ export async function renderDashboard() {
     // Render Weekly Activity Bar Chart
     renderWeeklyChart(recentActivity);
 
+    // Save fresh snapshot to cache for subsequent instant loads
+    try {
+      localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
+        stats: {
+          totalQuestions,
+          dueToday: stats.dueToday ?? 0,
+          overdue: stats.overdue ?? 0,
+          completionRate: stats.completionRate ?? 100,
+          streak: stats.streak ?? 0
+        },
+        totalQuestions,
+        dueMilestones,
+        subjectProgress,
+        recentQuestions,
+        recentActivity,
+        updatedAt: Date.now()
+      }));
+    } catch (_) {}
+
   } catch (err) {
     console.error('Failed to load dashboard data from backend:', err);
     showToast('Dashboard Notice', err.message, 'warning');
-    const totalQuestionsEl = document.getElementById('metricTotalQuestions');
-    if (totalQuestionsEl) totalQuestionsEl.textContent = '0';
   }
 
   if (window.lucide && typeof window.lucide.createIcons === 'function') {

@@ -73,7 +73,7 @@ export const authService = {
         id: payload.id,
         email: payload.email,
         name: payload.name || payload.email.split('@')[0],
-        avatar: computeAvatar(payload.name)
+        avatar: payload.avatar || computeAvatar(payload.name)
       };
     }
 
@@ -86,11 +86,12 @@ export const authService = {
           if (!error && data?.user) {
             const u = data.user;
             const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split('@')[0];
+            const avatar = u.user_metadata?.avatar || u.user_metadata?.avatar_url || computeAvatar(name);
             return {
               id: u.id,
               email: u.email,
               name,
-              avatar: computeAvatar(name)
+              avatar
             };
           }
         }
@@ -203,11 +204,12 @@ export const authService = {
           if (!error && data?.user) {
             const u = data.user;
             const name = u.user_metadata?.name || u.user_metadata?.full_name || u.email.split('@')[0];
+            const avatar = u.user_metadata?.avatar || u.user_metadata?.avatar_url || computeAvatar(name);
             const user = {
               id: u.id,
               email: u.email,
               name,
-              avatar: computeAvatar(name)
+              avatar
             };
             const token = data.session?.access_token || this.generateToken(user);
             return { user, token };
@@ -242,6 +244,52 @@ export const authService = {
     const err = new Error('Invalid email or password. Please verify your credentials.');
     err.statusCode = 401;
     throw err;
+  },
+
+  async updateProfile(userId, { name, avatar, role } = {}) {
+    let updatedUser = null;
+    const cleanName = name ? name.trim() : null;
+
+    if (isSupabaseConfigured() && config.nodeEnv !== 'test') {
+      try {
+        const client = getSupabaseClient();
+        if (client?.auth?.admin?.updateUserById) {
+          const updatePayload = { user_metadata: {} };
+          if (cleanName) updatePayload.user_metadata.name = cleanName;
+          if (avatar) updatePayload.user_metadata.avatar = avatar;
+          if (role) updatePayload.user_metadata.role = role;
+
+          const { data, error } = await client.auth.admin.updateUserById(userId, updatePayload);
+          if (!error && data?.user) {
+            const u = data.user;
+            const resName = u.user_metadata?.name || cleanName || 'User';
+            updatedUser = {
+              id: u.id,
+              email: u.email,
+              name: resName,
+              avatar: u.user_metadata?.avatar || avatar || computeAvatar(resName),
+              role: u.user_metadata?.role || role || 'Learner'
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase admin update profile fallback:', err.message);
+      }
+    }
+
+    if (!updatedUser) {
+      const u = inMemoryUsers.get(userId) || { id: userId, email: `${userId}@example.com` };
+      const resName = cleanName || u.name || 'User';
+      updatedUser = {
+        ...u,
+        name: resName,
+        avatar: avatar || u.avatar || computeAvatar(resName),
+        role: role || u.role || 'Learner'
+      };
+      inMemoryUsers.set(userId, updatedUser);
+    }
+
+    return updatedUser;
   },
 
   resetTestUsers() {

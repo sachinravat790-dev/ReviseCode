@@ -43,6 +43,21 @@ export const authController = {
     }
   },
 
+  async updateProfile(req, res, next) {
+    try {
+      const userId = req.user?.id;
+      const { name, avatar, role } = req.body || {};
+      const user = await authService.updateProfile(userId, { name, avatar, role });
+      return successResponse(res, {
+        statusCode: 200,
+        message: 'Profile updated successfully',
+        data: { user }
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async logout(req, res, next) {
     try {
       return successResponse(res, {

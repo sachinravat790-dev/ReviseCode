@@ -314,7 +314,13 @@ export function initNavigation() {
     const storedProfile = StorageManager.getProfile();
     const fullName = userSession?.name || storedProfile?.name || 'Learner';
     const role = storedProfile?.role || 'Learner';
-    const avatarData = storedProfile?.avatar || userSession?.avatar || '';
+    const userEmail = (userSession?.email || storedProfile?.email || '').toLowerCase();
+    const persistentAvatar = (userEmail && localStorage.getItem('revisecode_avatar_' + userEmail)) ||
+                             (userSession?.id && localStorage.getItem('revisecode_avatar_' + userSession.id)) ||
+                             localStorage.getItem('revisecode_global_avatar');
+    const avatarData = (storedProfile?.avatar && storedProfile.avatar.length > 3 ? storedProfile.avatar : null) || 
+                       (userSession?.avatar && userSession.avatar.length > 3 ? userSession.avatar : null) || 
+                       persistentAvatar || '';
     const initials = (userSession?.avatar && userSession.avatar.length <= 3) 
       ? userSession.avatar 
       : (fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U');

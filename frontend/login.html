@@ -231,6 +231,19 @@
       document.getElementById('dismissOAuthModalBtn').onclick = close;
     }
 
+    // Auto-fill remembered email if user checked "Remember me" previously
+    try {
+      const savedEmail = localStorage.getItem('revisecode_remembered_email');
+      if (savedEmail) {
+        const emailInput = document.getElementById('loginEmail');
+        const rememberCheckbox = document.getElementById('rememberMe');
+        if (emailInput) emailInput.value = savedEmail;
+        if (rememberCheckbox) rememberCheckbox.checked = true;
+        const passInput = document.getElementById('loginPassword');
+        if (passInput) passInput.focus();
+      }
+    } catch (_) {}
+
     // Process incoming OAuth redirect callback hash (#access_token=... or #error=...)
     if (window.location.hash) {
       (async () => {
@@ -284,6 +297,12 @@
       submitBtn.innerHTML = 'Signing in...';
 
       try {
+        if (rememberMe) {
+          localStorage.setItem('revisecode_remembered_email', email);
+        } else {
+          localStorage.removeItem('revisecode_remembered_email');
+        }
+
         await AuthService.login({ email, password, rememberMe });
         showToast('Success', 'Welcome back to ReviseCode!', 'success');
         setTimeout(() => {
