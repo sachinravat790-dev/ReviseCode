@@ -54,7 +54,13 @@ export async function apiRequest(endpoint, options = {}) {
   try {
     const token = localStorage.getItem('revisecode_token') || sessionStorage.getItem('revisecode_token');
     if (token) {
-      defaultHeaders['Authorization'] = `Bearer ${token}`;
+      if (token.length > 2048) {
+        // Prevent HTTP 494 "Request Header Too Large" caused by legacy oversized tokens
+        localStorage.removeItem('revisecode_token');
+        sessionStorage.removeItem('revisecode_token');
+      } else {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
+      }
     }
   } catch (_) {}
 
@@ -105,7 +111,7 @@ export async function apiRequest(endpoint, options = {}) {
       }
 
       if (!response.ok) {
-        if (response.status === 401 && !cleanEndpoint.startsWith('/auth/')) {
+        if ((response.status === 401 || response.status === 494) && !cleanEndpoint.startsWith('/auth/')) {
           try {
             localStorage.removeItem('revisecode_token');
             sessionStorage.removeItem('revisecode_token');

@@ -211,7 +211,7 @@ export const authService = {
               name,
               avatar
             };
-            const token = data.session?.access_token || this.generateToken(user);
+            const token = this.generateToken(user);
             return { user, token };
           }
 
@@ -254,9 +254,43 @@ export const authService = {
       try {
         const client = getSupabaseClient();
         if (client?.auth?.admin?.updateUserById) {
+          let avatarUrl = avatar;
+
+          // If avatar is base64 data, store it as an image file in Supabase Storage 'avatars'
+          // and use the short CDN public URL to prevent bloated JWTs and HTTP 494 header overflow.
+          if (avatar && typeof avatar === 'string' && avatar.startsWith('data:image')) {
+            try {
+              const base64Data = avatar.includes(',') ? avatar.split(',')[1] : avatar;
+              const mimeMatch = avatar.match(/^data:([^;]+);/);
+              const contentType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+              const ext = contentType.includes('png') ? 'png' : 'jpg';
+              const fileName = `${userId}.${ext}`;
+              const buffer = Buffer.from(base64Data, 'base64');
+
+              const { error: uploadError } = await client.storage
+                .from('avatars')
+                .upload(fileName, buffer, {
+                  contentType,
+                  upsert: true
+                });
+
+              if (!uploadError) {
+                const { data: pubData } = client.storage.from('avatars').getPublicUrl(fileName);
+                if (pubData?.publicUrl) {
+                  avatarUrl = `${pubData.publicUrl}?t=${Date.now()}`;
+                }
+              }
+            } catch (storageErr) {
+              console.warn('Supabase avatar storage upload notice:', storageErr.message);
+            }
+          }
+
           const updatePayload = { user_metadata: {} };
           if (cleanName) updatePayload.user_metadata.name = cleanName;
-          if (avatar) updatePayload.user_metadata.avatar = avatar;
+          if (avatarUrl) {
+            updatePayload.user_metadata.avatar = avatarUrl;
+            updatePayload.user_metadata.avatar_url = avatarUrl;
+          }
           if (role) updatePayload.user_metadata.role = role;
 
           const { data, error } = await client.auth.admin.updateUserById(userId, updatePayload);
@@ -267,7 +301,7 @@ export const authService = {
               id: u.id,
               email: u.email,
               name: resName,
-              avatar: u.user_metadata?.avatar || avatar || computeAvatar(resName),
+              avatar: u.user_metadata?.avatar || avatarUrl || computeAvatar(resName),
               role: u.user_metadata?.role || role || 'Learner'
             };
           }

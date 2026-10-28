@@ -108,7 +108,15 @@ export function initProfile() {
 
         // Sync to backend database
         try {
-          await api.put('/auth/profile', { avatar: compressedAvatar });
+          const res = await api.put('/auth/profile', { avatar: compressedAvatar });
+          if (res?.data?.user?.avatar) {
+            const serverAvatar = res.data.user.avatar;
+            currentAvatar = serverAvatar;
+            if (sessionUser) {
+              sessionUser.avatar = serverAvatar;
+              localStorage.setItem('revisecode_user', JSON.stringify(sessionUser));
+            }
+          }
         } catch (e) {
           console.warn('Backend avatar sync deferred:', e.message);
         }
