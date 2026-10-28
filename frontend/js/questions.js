@@ -107,9 +107,14 @@ async function fetchQuestionsAndMilestones() {
           </button>
         </div>
       `;
-      document.getElementById('retryQuestionsBtn')?.addEventListener('click', () => {
-        fetchQuestionsAndMilestones();
-      });
+      const retryBtn = document.getElementById('retryQuestionsBtn');
+      if (retryBtn) {
+        retryBtn.onclick = () => {
+          retryBtn.disabled = true;
+          retryBtn.innerHTML = 'Connecting...';
+          fetchQuestionsAndMilestones();
+        };
+      }
       if (window.lucide && typeof window.lucide.createIcons === 'function') {
         window.lucide.createIcons();
       }

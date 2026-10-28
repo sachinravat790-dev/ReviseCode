@@ -31,8 +31,12 @@ export function getApiBaseUrl() {
       return `http://${hostname || 'localhost'}:5001/api`;
     }
 
-    // Production (Vercel deployment or custom domain):
-    // Points directly to the production Render backend API
+    // Production (Vercel deployment):
+    // Use relative '/api' on Vercel to eliminate cross-origin CORS issues and tracker blockers,
+    // which Vercel seamlessly proxies to https://revisecode.onrender.com/api via vercel.json.
+    if (hostname.endsWith('vercel.app')) {
+      return '/api';
+    }
     return 'https://revisecode.onrender.com/api';
   }
 
