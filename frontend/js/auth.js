@@ -181,19 +181,8 @@ export const AuthService = {
   async initiateOAuth(provider) {
     const origin = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : 'https://revise-code.vercel.app';
     const redirectUrl = `${origin}/login`;
-
-    let targetUrl = null;
-    try {
-      const res = await api.get(`/auth/oauth-url/${provider}?redirectTo=${encodeURIComponent(redirectUrl)}`);
-      if (res && res.data && res.data.url) {
-        targetUrl = res.data.url;
-      }
-    } catch (_) {}
-
-    if (!targetUrl) {
-      const supabaseUrl = 'https://uffxohelmzgvgsbnuuyc.supabase.co';
-      targetUrl = `${supabaseUrl}/auth/v1/authorize?provider=${encodeURIComponent(provider)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-    }
+    const supabaseUrl = 'https://uffxohelmzgvgsbnuuyc.supabase.co';
+    const targetUrl = `${supabaseUrl}/auth/v1/authorize?provider=${encodeURIComponent(provider)}&redirect_to=${encodeURIComponent(redirectUrl)}`;
 
     if (typeof window !== 'undefined') {
       window.location.href = targetUrl;
@@ -250,12 +239,16 @@ export const AuthService = {
 
     // 2. Query backend /api/auth/me using this access token
     let serverUser = null;
+    let compactToken = null;
     try {
       const res = await api.get('/auth/me', {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       if (res?.data?.user) {
         serverUser = res.data.user;
+      }
+      if (res?.data?.token) {
+        compactToken = res.data.token;
       }
     } catch (_) {}
 
@@ -271,11 +264,12 @@ export const AuthService = {
       localStorage.setItem('revisecode_global_avatar', user.avatar);
     }
 
-    localStorage.setItem(TOKEN_KEY, accessToken);
+    const finalToken = compactToken || accessToken;
+    localStorage.setItem(TOKEN_KEY, finalToken);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     localStorage.setItem('revisecode_profile', JSON.stringify(user));
 
-    return { success: true, user, token: accessToken };
+    return { success: true, user, token: finalToken };
   },
 
   async logout() {

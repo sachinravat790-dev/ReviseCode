@@ -43,10 +43,11 @@ export const authController = {
           user = { ...req.user, ...liveUser };
         }
       }
+      const token = authService.generateToken(user);
       return successResponse(res, {
         statusCode: 200,
         message: 'Current user session retrieved',
-        data: { user }
+        data: { user, token }
       });
     } catch (err) {
       next(err);
