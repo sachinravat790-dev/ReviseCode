@@ -112,18 +112,24 @@ export async function apiRequest(endpoint, options = {}) {
 
       if (!response.ok) {
         if ((response.status === 401 || response.status === 494) && !cleanEndpoint.startsWith('/auth/')) {
-          try {
-            localStorage.removeItem('revisecode_token');
-            sessionStorage.removeItem('revisecode_token');
-            localStorage.removeItem('revisecode_user');
-            sessionStorage.removeItem('revisecode_user');
-          } catch (_) {}
-          const path = (typeof window !== 'undefined' && window.location?.pathname) ? window.location.pathname.toLowerCase() : '';
-          const rawFile = path.split('/').pop() || 'index';
-          const cleanFile = rawFile.replace(/\.html$/, '');
-          const isPublicPage = cleanFile === '' || cleanFile === 'index' || cleanFile === 'login' || cleanFile === 'register' || cleanFile === 'forgot-password';
-          if (!isPublicPage && typeof window !== 'undefined') {
-            window.location.href = 'login.html';
+          const loginTs = parseInt(localStorage.getItem('revisecode_login_timestamp') || '0', 10);
+          const isFreshLogin = (Date.now() - loginTs) < 30000;
+
+          // If the login is fresh (<30 seconds), avoid kicking the user out due to cold-start race conditions
+          if (!isFreshLogin) {
+            try {
+              localStorage.removeItem('revisecode_token');
+              sessionStorage.removeItem('revisecode_token');
+              localStorage.removeItem('revisecode_user');
+              sessionStorage.removeItem('revisecode_user');
+            } catch (_) {}
+            const path = (typeof window !== 'undefined' && window.location?.pathname) ? window.location.pathname.toLowerCase() : '';
+            const rawFile = path.split('/').pop() || 'index';
+            const cleanFile = rawFile.replace(/\.html$/, '');
+            const isPublicPage = cleanFile === '' || cleanFile === 'index' || cleanFile === 'login' || cleanFile === 'register' || cleanFile === 'forgot-password';
+            if (!isPublicPage && typeof window !== 'undefined') {
+              window.location.href = 'login.html';
+            }
           }
         }
 
@@ -190,11 +196,16 @@ function appendQuery(endpoint, params) {
 }
 
 export const api = {
-  get: (endpoint, query) => apiRequest(appendQuery(endpoint, query), { method: 'GET' }),
-  post: (endpoint, body) => apiRequest(endpoint, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
-  put: (endpoint, body) => apiRequest(endpoint, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
-  patch: (endpoint, body) => apiRequest(endpoint, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
-  delete: (endpoint) => apiRequest(endpoint, { method: 'DELETE' }),
+  get: (endpoint, queryOrOptions, options = {}) => {
+    if (queryOrOptions && (queryOrOptions.headers || queryOrOptions.signal || queryOrOptions.method)) {
+      return apiRequest(endpoint, { method: 'GET', ...queryOrOptions });
+    }
+    return apiRequest(appendQuery(endpoint, queryOrOptions), { method: 'GET', ...options });
+  },
+  post: (endpoint, body, options = {}) => apiRequest(endpoint, { method: 'POST', body: body ? JSON.stringify(body) : undefined, ...options }),
+  put: (endpoint, body, options = {}) => apiRequest(endpoint, { method: 'PUT', body: body ? JSON.stringify(body) : undefined, ...options }),
+  patch: (endpoint, body, options = {}) => apiRequest(endpoint, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined, ...options }),
+  delete: (endpoint, options = {}) => apiRequest(endpoint, { method: 'DELETE', ...options }),
 
   // Health check helper
   checkHealth: async () => {

@@ -32,6 +32,41 @@ export const authController = {
     }
   },
 
+  async resetPassword(req, res, next) {
+    try {
+      const { email } = req.body;
+      const result = await authService.resetPassword(email);
+      return successResponse(res, {
+        statusCode: 200,
+        message: result.message || 'Password reset instructions have been sent.',
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async exchangeToken(req, res, next) {
+    try {
+      const { accessToken } = req.body || {};
+      if (!accessToken || typeof accessToken !== 'string') {
+        return errorResponse(res, { statusCode: 400, message: 'accessToken is required' });
+      }
+      const verified = await authService.verifyToken(accessToken);
+      if (!verified || !verified.id) {
+        return errorResponse(res, { statusCode: 401, message: 'Invalid or expired authentication token' });
+      }
+      const token = authService.generateToken(verified);
+      return successResponse(res, {
+        statusCode: 200,
+        message: 'Token successfully exchanged',
+        data: { user: verified, token }
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async getMe(req, res, next) {
     try {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

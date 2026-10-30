@@ -133,15 +133,28 @@ export const AuthService = {
     }
 
     if (user.avatar && user.avatar.length > 3) {
-      if (userEmail) localStorage.setItem('revisecode_avatar_' + userEmail, user.avatar);
-      if (user.id) localStorage.setItem('revisecode_avatar_' + user.id, user.avatar);
-      localStorage.setItem('revisecode_global_avatar', user.avatar);
+      try {
+        if (user.avatar.length < 50000) {
+          if (userEmail) localStorage.setItem('revisecode_avatar_' + userEmail, user.avatar);
+          if (user.id) localStorage.setItem('revisecode_avatar_' + user.id, user.avatar);
+          localStorage.setItem('revisecode_global_avatar', user.avatar);
+        }
+      } catch (_) {}
     }
 
-    const storage = rememberMe ? localStorage : sessionStorage;
-    storage.setItem(TOKEN_KEY, token);
-    storage.setItem(USER_KEY, JSON.stringify(user));
-    localStorage.setItem('revisecode_profile', JSON.stringify(user));
+    // Always persist to localStorage for bulletproof cross-page session stability,
+    // and also mirror to sessionStorage so both APIs find the credentials reliably.
+    try {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      localStorage.setItem('revisecode_profile', JSON.stringify(user));
+      localStorage.setItem('revisecode_login_timestamp', String(Date.now()));
+
+      sessionStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch (storageErr) {
+      console.warn('Session persistence notice:', storageErr);
+    }
 
     return { success: true, user, token };
   },
@@ -166,12 +179,10 @@ export const AuthService = {
   },
 
   async resetPassword(email) {
-    try {
-      await api.post('/auth/reset-password', { email });
-    } catch (_) {}
+    const res = await api.post('/auth/reset-password', { email });
     return {
       success: true,
-      message: `If an account exists with ${email}, password reset instructions have been sent.`
+      message: res?.message || res?.data?.message || `If an account exists with ${email}, password reset instructions have been sent.`
     };
   },
 
@@ -237,20 +248,32 @@ export const AuthService = {
       }
     } catch (_) {}
 
-    // 2. Query backend /api/auth/me using this access token
+    // 2. Query backend to exchange OAuth token for clean internal compact token
     let serverUser = null;
     let compactToken = null;
     try {
-      const res = await api.get('/auth/me', {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
+      const res = await api.post('/auth/exchange-token', { accessToken });
       if (res?.data?.user) {
         serverUser = res.data.user;
       }
       if (res?.data?.token) {
         compactToken = res.data.token;
       }
-    } catch (_) {}
+    } catch (_) {
+      try {
+        const res = await api.get('/auth/me', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (res?.data?.user) {
+          serverUser = res.data.user;
+        }
+        if (res?.data?.token) {
+          compactToken = res.data.token;
+        }
+      } catch (e) {
+        console.warn('OAuth token exchange notice:', e.message);
+      }
+    }
 
     const user = serverUser || decodedUser;
     if (!user) {
@@ -258,16 +281,28 @@ export const AuthService = {
     }
 
     if (user.avatar && user.avatar.length > 3) {
-      const emailKey = (user.email || '').toLowerCase();
-      if (emailKey) localStorage.setItem('revisecode_avatar_' + emailKey, user.avatar);
-      if (user.id) localStorage.setItem('revisecode_avatar_' + user.id, user.avatar);
-      localStorage.setItem('revisecode_global_avatar', user.avatar);
+      try {
+        const emailKey = (user.email || '').toLowerCase();
+        if (user.avatar.length < 50000) {
+          if (emailKey) localStorage.setItem('revisecode_avatar_' + emailKey, user.avatar);
+          if (user.id) localStorage.setItem('revisecode_avatar_' + user.id, user.avatar);
+          localStorage.setItem('revisecode_global_avatar', user.avatar);
+        }
+      } catch (_) {}
     }
 
     const finalToken = compactToken || accessToken;
-    localStorage.setItem(TOKEN_KEY, finalToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    localStorage.setItem('revisecode_profile', JSON.stringify(user));
+    try {
+      localStorage.setItem(TOKEN_KEY, finalToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      localStorage.setItem('revisecode_profile', JSON.stringify(user));
+      localStorage.setItem('revisecode_login_timestamp', String(Date.now()));
+
+      sessionStorage.setItem(TOKEN_KEY, finalToken);
+      sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch (storageErr) {
+      console.warn('Session storage notice:', storageErr);
+    }
 
     return { success: true, user, token: finalToken };
   },

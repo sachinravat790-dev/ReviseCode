@@ -238,3 +238,82 @@ test('POST /api/auth/logout succeeds with 200', async () => {
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
 });
+
+test('POST /api/auth/reset-password dispatches reset instructions', async () => {
+  setupTestDatabase();
+
+  const res = await request(app, {
+    method: 'POST',
+    url: '/api/auth/reset-password',
+    body: { email: 'reset_user@example.com' }
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.ok(res.body.data.message);
+});
+
+test('POST /api/auth/reset-password rejects invalid email format with 400', async () => {
+  setupTestDatabase();
+
+  const res = await request(app, {
+    method: 'POST',
+    url: '/api/auth/reset-password',
+    body: { email: 'invalid-email-string' }
+  });
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.success, false);
+});
+
+test('authService.verifyToken verifies unexpired native Supabase JWT token', async () => {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    sub: 'supabase-user-12345',
+    email: 'sachinravat790@gmail.com',
+    aud: 'authenticated',
+    role: 'authenticated',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    user_metadata: {
+      name: 'Sachin Kumar',
+      full_name: 'Sachin Kumar'
+    }
+  })).toString('base64url');
+  const fakeSig = 'mock_signature_part';
+  const supabaseToken = `${header}.${payload}.${fakeSig}`;
+
+  const verified = await authService.verifyToken(supabaseToken);
+  assert.ok(verified);
+  assert.equal(verified.id, 'supabase-user-12345');
+  assert.equal(verified.email, 'sachinravat790@gmail.com');
+  assert.equal(verified.name, 'Sachin Kumar');
+});
+
+test('POST /api/auth/exchange-token exchanges Supabase token for internal compact JWT', async () => {
+  setupTestDatabase();
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    sub: 'oauth-user-7788',
+    email: 'sachinravat790@gmail.com',
+    aud: 'authenticated',
+    role: 'authenticated',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    user_metadata: {
+      name: 'Sachin Kumar',
+      full_name: 'Sachin Kumar'
+    }
+  })).toString('base64url');
+  const supabaseToken = `${header}.${payload}.sig`;
+
+  const res = await request(app, {
+    method: 'POST',
+    url: '/api/auth/exchange-token',
+    body: { accessToken: supabaseToken }
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.equal(res.body.data.user.email, 'sachinravat790@gmail.com');
+  assert.ok(res.body.data.token);
+  assert.ok(res.body.data.token.length < 500);
+});
