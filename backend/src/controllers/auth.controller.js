@@ -1,6 +1,7 @@
 import { authService } from '../services/auth.service.js';
-import { successResponse } from '../utils/api-response.js';
-import { config } from '../config/env.js';
+import { successResponse, errorResponse } from '../utils/api-response.js';
+import { config, isSupabaseConfigured } from '../config/env.js';
+import { getSupabaseClient } from '../config/supabase.js';
 
 export const authController = {
   async register(req, res, next) {
@@ -40,6 +41,30 @@ export const authController = {
         statusCode: 200,
         message: result.message || 'Password reset instructions have been sent.',
         data: result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updatePassword(req, res, next) {
+    try {
+      const userId = req.user?.id;
+      const { password } = req.body || {};
+      if (!password || typeof password !== 'string' || password.length < 6) {
+        return errorResponse(res, { statusCode: 400, message: 'Password must be at least 6 characters long' });
+      }
+      if (isSupabaseConfigured() && config.nodeEnv !== 'test') {
+        const client = getSupabaseClient();
+        if (client?.auth?.admin?.updateUserById) {
+          const { error } = await client.auth.admin.updateUserById(userId, { password });
+          if (error) throw error;
+        }
+      }
+      return successResponse(res, {
+        statusCode: 200,
+        message: 'Password has been updated successfully. You can now sign in with your new password.',
+        data: { success: true }
       });
     } catch (err) {
       next(err);

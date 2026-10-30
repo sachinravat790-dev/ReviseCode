@@ -179,10 +179,33 @@ export const AuthService = {
   },
 
   async resetPassword(email) {
-    const res = await api.post('/auth/reset-password', { email });
+    if (!email || typeof email !== 'string') {
+      throw new Error('Please enter a valid email address');
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const res = await api.post('/auth/reset-password', { email: cleanEmail });
     return {
       success: true,
-      message: res?.message || res?.data?.message || `If an account exists with ${email}, password reset instructions have been sent.`
+      message: res?.message || res?.data?.message || `If an account exists with ${cleanEmail}, recovery instructions have been sent.`
+    };
+  },
+
+  async updatePassword(newPassword, token = null) {
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+    const authToken = token || this.getToken();
+    if (!authToken) {
+      throw new Error('Missing recovery authentication session. Please request a new password reset link.');
+    }
+
+    const res = await api.post('/auth/update-password', { password: newPassword }, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+
+    return {
+      success: true,
+      message: res?.message || res?.data?.message || 'Your password has been successfully updated! You can now sign in with your new password.'
     };
   },
 

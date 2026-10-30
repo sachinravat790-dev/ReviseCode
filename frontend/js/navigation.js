@@ -227,9 +227,15 @@ export function initNavigation() {
                        cleanFile === 'index' || 
                        cleanFile === 'login' || 
                        cleanFile === 'register' || 
-                       cleanFile === 'forgot-password';
+                       cleanFile === 'forgot-password' ||
+                       cleanFile === 'reset-password';
 
   if (!isPublicPage && !AuthService.isAuthenticated()) {
+    // If incoming recovery hash is present on a protected page, forward to reset-password
+    if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('type=recovery')) {
+      window.location.replace(`reset-password.html${window.location.hash}`);
+      return;
+    }
     // If incoming OAuth callback hash is present on a protected page, handle it before redirecting
     if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
       AuthService.handleOAuthCallback().then(result => {

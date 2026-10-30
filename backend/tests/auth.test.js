@@ -317,3 +317,32 @@ test('POST /api/auth/exchange-token exchanges Supabase token for internal compac
   assert.ok(res.body.data.token);
   assert.ok(res.body.data.token.length < 500);
 });
+
+test('POST /api/auth/update-password updates user password successfully', async () => {
+  setupTestDatabase();
+  const token = 'test_token_user_123';
+  const res = await request(app, {
+    method: 'POST',
+    url: '/api/auth/update-password',
+    headers: { Authorization: `Bearer ${token}` },
+    body: { password: 'NewSecurePassword123' }
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.ok(res.body.data.success);
+});
+
+test('POST /api/auth/update-password rejects short password with 400', async () => {
+  setupTestDatabase();
+  const token = 'test_token_user_123';
+  const res = await request(app, {
+    method: 'POST',
+    url: '/api/auth/update-password',
+    headers: { Authorization: `Bearer ${token}` },
+    body: { password: '123' }
+  });
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.success, false);
+});

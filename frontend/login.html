@@ -246,25 +246,29 @@
 
     // Process incoming OAuth redirect callback hash (#access_token=... or #error=...)
     if (window.location.hash) {
-      (async () => {
-        try {
-          const authResult = await AuthService.handleOAuthCallback();
-          if (authResult && authResult.success) {
-            showToast('Welcome!', `Logged in successfully as ${authResult.user?.name || 'User'}.`, 'success');
-            setTimeout(() => {
-              window.location.replace('dashboard.html');
-            }, 500);
+      if (window.location.hash.includes('type=recovery')) {
+        window.location.replace(`reset-password.html${window.location.hash}`);
+      } else {
+        (async () => {
+          try {
+            const authResult = await AuthService.handleOAuthCallback();
+            if (authResult && authResult.success) {
+              showToast('Welcome!', `Logged in successfully as ${authResult.user?.name || 'User'}.`, 'success');
+              setTimeout(() => {
+                window.location.replace('dashboard.html');
+              }, 500);
+            }
+          } catch (err) {
+            console.warn('OAuth callback notice:', err);
+            const msg = err.message || '';
+            if (msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('unsupported_provider') || msg.toLowerCase().includes('validation_failed')) {
+              showOAuthSetupModal('Google / GitHub', msg);
+            } else {
+              showToast('Sign-In Notice', msg || 'Could not complete sign-in. Please use email and password.', 'error', 6000);
+            }
           }
-        } catch (err) {
-          console.warn('OAuth callback notice:', err);
-          const msg = err.message || '';
-          if (msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('unsupported_provider') || msg.toLowerCase().includes('validation_failed')) {
-            showOAuthSetupModal('Google / GitHub', msg);
-          } else {
-            showToast('Sign-In Notice', msg || 'Could not complete sign-in. Please use email and password.', 'error', 6000);
-          }
-        }
-      })();
+        })();
+      }
     }
 
     // Form submit

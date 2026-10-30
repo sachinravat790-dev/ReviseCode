@@ -126,7 +126,7 @@ export async function apiRequest(endpoint, options = {}) {
             const path = (typeof window !== 'undefined' && window.location?.pathname) ? window.location.pathname.toLowerCase() : '';
             const rawFile = path.split('/').pop() || 'index';
             const cleanFile = rawFile.replace(/\.html$/, '');
-            const isPublicPage = cleanFile === '' || cleanFile === 'index' || cleanFile === 'login' || cleanFile === 'register' || cleanFile === 'forgot-password';
+            const isPublicPage = cleanFile === '' || cleanFile === 'index' || cleanFile === 'login' || cleanFile === 'register' || cleanFile === 'forgot-password' || cleanFile === 'reset-password';
             if (!isPublicPage && typeof window !== 'undefined') {
               window.location.href = 'login.html';
             }
